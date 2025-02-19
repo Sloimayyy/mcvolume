@@ -77,6 +77,10 @@ data class IntBoundary(
         )
     }
 
+    fun getClampedInside(p: IVec3): IVec3 {
+        return p.clamp(this.a, this.b - 1)
+    }
+
     fun withMidpoint(point: IVec3): IntBoundary {
         val lowCorner = point - dims / 2
         return new(
@@ -85,7 +89,11 @@ data class IntBoundary(
         )
     }
 
+    fun move(v: IVec3) = new(a + v, b + v)
+
     fun expand(dims: IVec3) = new(a - dims, b + dims)
+
+    fun eq(other: IntBoundary) = this.a.equality(other.a) && this.b.equality(other.b)
 
 
     fun rangeX() = a.x until b.x

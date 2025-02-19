@@ -1,11 +1,17 @@
 package me.sloimay.mcvolume.block
 
+import me.sloimay.me.sloimay.mcvolume.block.MutBlockState
 import java.util.*
 
 
-data class BlockState internal constructor(val resLoc: String,
+
+internal data class PropEntry(var k: String, var v: String)
+
+
+
+open class BlockState internal constructor(val resLoc: String,
                                            val name: String,
-                                           val props: List<Pair<String, String>>) {
+                                           internal val props: MutableList<PropEntry>) {
 
     val fullName = "$resLoc:$name"
     val hasProps = props.isNotEmpty()
@@ -15,7 +21,11 @@ data class BlockState internal constructor(val resLoc: String,
 
         fun new(resLoc: String, name: String, props: List<Pair<String, String>>): BlockState {
             // List copy so it only becomes a view
-            return BlockState(resLoc, name, props.toList())
+            return BlockState(
+                resLoc,
+                name,
+                props.map { PropEntry(it.first, it.second) }.toMutableList()
+            )
         }
 
         fun fromStr(str: String): BlockState {
@@ -67,8 +77,7 @@ data class BlockState internal constructor(val resLoc: String,
 
     fun getProp(propName: String): Optional<String> {
         for ((prop, v) in props)
-            if (prop == propName)
-                return Optional.of(v)
+            if (prop == propName) return Optional.of(v)
         return Optional.empty()
     }
 
@@ -89,6 +98,10 @@ data class BlockState internal constructor(val resLoc: String,
         return true
     }
 
+    fun toMutable(): MutBlockState {
+        return MutBlockState(resLoc, name, props.toMutableList())
+    }
+
     private fun computeStateStr(): String {
         val s = StringBuilder(this.fullName)
         if (this.hasProps) {
@@ -100,5 +113,7 @@ data class BlockState internal constructor(val resLoc: String,
         }
         return s.toString()
     }
+
+    override fun toString() = stateStr
 }
 

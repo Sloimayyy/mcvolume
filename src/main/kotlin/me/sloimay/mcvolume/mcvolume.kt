@@ -36,7 +36,7 @@ class McVolume {
     }
 
     fun getPaletteBlock(blockState: BlockState): VolBlock {
-        println(blockState.stateStr)
+        //println(blockState.stateStr)
         return this.getPaletteBlock(blockState.stateStr)
     }
 
