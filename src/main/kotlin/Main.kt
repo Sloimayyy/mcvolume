@@ -3,11 +3,86 @@ package com.sloimay
 import com.sloimay.smath.vectors.ivec3
 import com.sloimay.mcvolume.McVolume
 import com.sloimay.mcvolume.block.BlockState
+import com.sloimay.smath.vectors.IVec3
 import net.querz.nbt.io.SNBTUtil
 import net.querz.nbt.tag.ByteTag
 import net.querz.nbt.tag.CompoundTag
+import kotlin.random.Random
+import kotlin.time.ExperimentalTime
+import kotlin.time.TimeSource
+
+
+@OptIn(ExperimentalTime::class)
+internal fun blockPaletteSpeedTesting() {
+
+    val vol = McVolume.new(
+        IVec3.new(0, 0, 0),
+        IVec3.new(1000, 1000, 1000),
+    )
+
+    val rand = Random(95837)
+
+    val chars = "abcdefghijklmnopqrstuvwxyz1234567890"
+
+    fun getRandChar(): Char {
+        return chars[rand.nextInt(0, chars.length)]
+    }
+
+    val blockCount = 100
+    val blocks = mutableListOf<String>()
+
+    for (i in 0 until blockCount) {
+        val b = (0 until 100).map { getRandChar() }.joinToString(separator = "")
+        blocks.add(b)
+    }
+
+
+    /*for (b in blocks) {
+        vol.getPaletteBlock(b)
+    }*/
+
+
+
+
+    val size = 100
+
+    val blocksToPlace = (0 until (size*size*size)).map { blocks[rand.nextInt(0, blocks.size)] }
+
+    println("started")
+    val ts = TimeSource.Monotonic
+    val start = ts.markNow()
+
+
+    var i = 0
+
+    for (y in 0 until size) for (z in 0 until size) for (x in 0 until size) {
+
+        val b = blocksToPlace[i]
+        val volBlock = vol.getPaletteBlock(b)
+        vol.setBlock(ivec3(x, y, z), volBlock)
+
+        i++
+    }
+
+    println("done in ${start.elapsedNow()}")
+
+
+}
+
+
+
+
+
+
+
+
+
 
 internal fun main() {
+
+    blockPaletteSpeedTesting()
+
+    return
 
     //
 

@@ -36,23 +36,28 @@ class McVolume {
     }
 
     fun getPaletteBlock(blockState: BlockState): VolBlock {
-        //println(blockState.stateStr)
-        return this.getPaletteBlock(blockState.stateStr)
-    }
+        val stateStr = blockState.stateStr
 
-    fun getPaletteBlock(blockStateStr: String): VolBlock {
-        val blockIdx = volBlockPalette.indexOfFirst { blockStateStr == it.state.stateStr }
+        val blockIdx = volBlockPalette.indexOfFirst { stateStr == it.state.stateStr }
         if (blockIdx == -1) {
-            return addPaletteBlock(blockStateStr)
+            return addPaletteBlock(blockState)
         } else {
             return volBlockPalette[blockIdx]
         }
     }
 
+    fun getPaletteBlock(blockStateStr: String): VolBlock {
+        return getPaletteBlock(BlockState.fromStr(blockStateStr))
+    }
+
     fun getDefaultBlock() = this.volBlockPalette[0]
 
     internal fun addPaletteBlock(blockState: String): VolBlock {
-        val volBlock = VolBlock.new(volBlockPalette.size.toShort(), BlockState.fromStr(blockState))
+        return addPaletteBlock(BlockState.fromStr(blockState))
+    }
+
+    internal fun addPaletteBlock(blockState: BlockState): VolBlock {
+        val volBlock = VolBlock.new(volBlockPalette.size.toShort(), blockState)
         volBlockPalette.add(volBlock)
         return volBlock
     }
