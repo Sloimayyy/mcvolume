@@ -1,8 +1,8 @@
-package me.sloimay
+package com.sloimay
 
-import me.sloimay.mcvolume.McVolume
-import me.sloimay.mcvolume.block.BlockState
-import me.sloimay.smath.vectors.ivec3
+import com.sloimay.smath.vectors.ivec3
+import com.sloimay.mcvolume.McVolume
+import com.sloimay.mcvolume.block.BlockState
 import net.querz.nbt.io.SNBTUtil
 import net.querz.nbt.tag.ByteTag
 import net.querz.nbt.tag.CompoundTag

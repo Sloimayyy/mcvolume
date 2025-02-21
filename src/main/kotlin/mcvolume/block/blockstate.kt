@@ -1,4 +1,4 @@
-package me.sloimay.mcvolume.block
+package com.sloimay.mcvolume.block
 
 import me.sloimay.me.sloimay.mcvolume.block.MutBlockState
 import java.util.*

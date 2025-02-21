@@ -1,11 +1,11 @@
-package me.sloimay.mcvolume.io
+package com.sloimay.mcvolume.io
 
 
-import me.sloimay.mcvolume.McvUtils.Companion.readVarint
-import me.sloimay.mcvolume.block.VolBlock
-import me.sloimay.mcvolume.McVolume
-import me.sloimay.smath.vectors.IVec3
-import me.sloimay.smath.vectors.ivec3
+import com.sloimay.smath.vectors.IVec3
+import com.sloimay.smath.vectors.ivec3
+import com.sloimay.mcvolume.McvUtils.Companion.readVarint
+import com.sloimay.mcvolume.block.VolBlock
+import com.sloimay.mcvolume.McVolume
 import net.querz.nbt.io.NBTUtil
 import net.querz.nbt.io.NamedTag
 import net.querz.nbt.tag.ByteArrayTag

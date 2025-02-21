@@ -1,7 +1,8 @@
-package me.sloimay.mcvolume
+package com.sloimay.mcvolume
 
-import me.sloimay.smath.vectors.IVec3
-import me.sloimay.smath.vectors.ivec3
+import com.sloimay.smath.vectors.IVec3
+import com.sloimay.smath.vectors.ivec3
+
 
 /**
  * [a; b)

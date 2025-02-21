@@ -1,6 +1,6 @@
-package me.sloimay.mcvolume
+package com.sloimay.mcvolume
 
-import me.sloimay.smath.vectors.IVec3
+import com.sloimay.smath.vectors.IVec3
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.log2

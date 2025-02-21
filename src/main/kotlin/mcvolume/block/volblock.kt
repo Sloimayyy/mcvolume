@@ -1,4 +1,4 @@
-package me.sloimay.mcvolume.block
+package com.sloimay.mcvolume.block
 
 typealias BlockPaletteId = Short
 

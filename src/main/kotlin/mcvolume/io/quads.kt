@@ -1,9 +1,8 @@
-package me.sloimay.mcvolume.io
+package com.sloimay.mcvolume.io
 
-import me.sloimay.mcvolume.*
-import me.sloimay.mcvolume.IntBoundary
-import me.sloimay.smath.vectors.IVec3
-import me.sloimay.smath.vectors.ivec3
+import com.sloimay.mcvolume.*
+import com.sloimay.smath.vectors.IVec3
+import com.sloimay.smath.vectors.ivec3
 import java.io.File
 import kotlin.concurrent.thread
 import kotlin.time.ExperimentalTime
@@ -143,8 +142,8 @@ fun McVolume.exportToSQuads(filePath: String,
         IVec3.Z,
         -IVec3.Z,
     )
-    val chunkDims = IVec3.splat(CHUNK_SIDE_LEN)
-    val localChunkBounds = IntBoundary.new(ivec3(0, 0, 0), chunkDims)
+    val chunkDims = IVec3.splat(com.sloimay.mcvolume.CHUNK_SIDE_LEN)
+    val localChunkBounds = com.sloimay.mcvolume.IntBoundary.new(ivec3(0, 0, 0), chunkDims)
     var coordIndexesPerAxis = mutableListOf<IVec3>()
     for (axis in 0 until 3) {
         var xCoordIdx = 0
@@ -160,7 +159,7 @@ fun McVolume.exportToSQuads(filePath: String,
 
 
     // # Finalize file header by adding the chunk side len bit count
-    McvUtils.writeIntToByteListLE(fileBytes, CHUNK_BIT_SIZE)
+    McvUtils.writeIntToByteListLE(fileBytes, com.sloimay.mcvolume.CHUNK_BIT_SIZE)
 
     println("Init in: ${exportStart.elapsedNow()}")
 
@@ -197,7 +196,7 @@ fun McVolume.exportToSQuads(filePath: String,
     var threadSerialChunks = Array<MutableList<SerialChunk>>(jobs.size) { mutableListOf() }
 
     val jobsBounds = jobs.map {
-        IntBoundary.new(
+        com.sloimay.mcvolume.IntBoundary.new(
             buildChunksBound.a.withAxis(longestAxisIdx, it.first),
             buildChunksBound.b.withAxis(longestAxisIdx, it.second),
         )
@@ -215,8 +214,8 @@ fun McVolume.exportToSQuads(filePath: String,
             val jobBounds = jobsBounds[threadIdx]
             for (chunkPos in jobBounds.iterYzx()) {
                 val chunk = this.chunks[this.chunkGridBound.posToYzxIdx(chunkPos)] ?: continue
-                val chunkWorldPos = chunkPos shl CHUNK_BIT_SIZE
-                val chunkWorldBounds = IntBoundary.new(chunkWorldPos, chunkWorldPos + chunkDims)
+                val chunkWorldPos = chunkPos shl com.sloimay.mcvolume.CHUNK_BIT_SIZE
+                val chunkWorldBounds = com.sloimay.mcvolume.IntBoundary.new(chunkWorldPos, chunkWorldPos + chunkDims)
 
                 // # Populate chunk planes
                 // Reset
@@ -228,13 +227,13 @@ fun McVolume.exportToSQuads(filePath: String,
                     // We're not greedy meshing air blocks
                     if (blockId == airBlock.paletteId) { continue; }
 
-                    val currPosInChunk = Chunk.blockIdxToLocal(blockIdx)
+                    val currPosInChunk = com.sloimay.mcvolume.Chunk.blockIdxToLocal(blockIdx)
                     for ((normalIdx, normal) in normals.withIndex()) {
                         val adjPosInChunk = currPosInChunk + normal
                         val adjPosInChunkInside = localChunkBounds.posInside(adjPosInChunk)
 
                         val adjIsTransparent = if (adjPosInChunkInside) {
-                            val adjBlockIdx = Chunk.localToBlockIdx(adjPosInChunk)
+                            val adjBlockIdx = com.sloimay.mcvolume.Chunk.localToBlockIdx(adjPosInChunk)
                             val adjBlockId = chunk.blocks[adjBlockIdx]
                             colorTable[adjBlockId.toInt()][3].toUByte() < 255.toUByte()
                         } else {
@@ -263,7 +262,11 @@ fun McVolume.exportToSQuads(filePath: String,
                 }
 
                 // # Greedy mesh
-                var serialChunk = SerialChunk.new(chunkWorldPos, colorPaletteIdxMaxBitCount, CHUNK_BIT_SIZE)
+                var serialChunk = com.sloimay.mcvolume.io.SerialChunk.new(
+                    chunkWorldPos,
+                    colorPaletteIdxMaxBitCount,
+                    com.sloimay.mcvolume.CHUNK_BIT_SIZE
+                )
                 for ((normalIdx, planeNormal) in normals.withIndex()) {
 
                     val (normalChunkPlanes, dims) = chunkPlanesPerNormal[normalIdx]

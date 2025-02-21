@@ -1,10 +1,10 @@
-package me.sloimay.mcvolume
+package com.sloimay.mcvolume
 
-import me.sloimay.mcvolume.block.VolBlock
-import me.sloimay.mcvolume.block.BlockState
-import me.sloimay.mcvolume.block.DEFAULT_BLOCK_ID
-import me.sloimay.smath.vectors.IVec3
-import me.sloimay.smath.vectors.ivec3
+import com.sloimay.smath.vectors.IVec3
+import com.sloimay.smath.vectors.ivec3
+import com.sloimay.mcvolume.block.VolBlock
+import com.sloimay.mcvolume.block.BlockState
+import com.sloimay.mcvolume.block.DEFAULT_BLOCK_ID
 import net.querz.nbt.tag.CompoundTag
 import java.util.*
 
@@ -137,11 +137,13 @@ class McVolume {
         val newBoundary = IntBoundary.new(areaMin, areaMax)
         val newChunkGridBound = IntBoundary.new(
             posToChunkPos(newBoundary.a),
-            posToChunkPos(newBoundary.b + (CHUNK_SIDE_LEN - 1)))
+            posToChunkPos(newBoundary.b + (CHUNK_SIDE_LEN - 1))
+        )
         val newChunkCount = newChunkGridBound.dim.elementProduct()
         val newChunks: Array<Chunk?> = Array(newChunkCount) { null }
         val newWantedBound = newBoundary
-        val newLoadedBound = IntBoundary.new(newChunkGridBound.a * CHUNK_SIDE_LEN, (newChunkGridBound.b) * CHUNK_SIDE_LEN)
+        val newLoadedBound =
+            IntBoundary.new(newChunkGridBound.a * CHUNK_SIDE_LEN, (newChunkGridBound.b) * CHUNK_SIDE_LEN)
 
         // Populate new chunks
         if (chunks.isNotEmpty()) {
@@ -238,7 +240,7 @@ class McVolume {
             return Optional.empty()
         }
 
-        return Optional.of(IntBoundary.new(minChunkPos, maxChunkPos+1))
+        return Optional.of(IntBoundary.new(minChunkPos, maxChunkPos + 1))
     }
 
     private fun posToChunkPos(pos: IVec3): IVec3 {

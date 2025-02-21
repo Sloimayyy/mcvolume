@@ -1,7 +1,7 @@
 package me.sloimay.me.sloimay.mcvolume.block
 
-import me.sloimay.mcvolume.block.BlockState
-import me.sloimay.mcvolume.block.PropEntry
+import com.sloimay.mcvolume.block.BlockState
+import com.sloimay.mcvolume.block.PropEntry
 import java.util.*
 
 

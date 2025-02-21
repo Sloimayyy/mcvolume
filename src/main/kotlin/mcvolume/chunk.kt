@@ -1,10 +1,10 @@
-package me.sloimay.mcvolume
+package com.sloimay.mcvolume
 
-import me.sloimay.mcvolume.block.VolBlock
-import me.sloimay.mcvolume.block.BlockPaletteId
-import me.sloimay.mcvolume.block.DEFAULT_BLOCK_ID
-import me.sloimay.smath.vectors.IVec3
-import me.sloimay.smath.vectors.ivec3
+import com.sloimay.smath.vectors.IVec3
+import com.sloimay.smath.vectors.ivec3
+import com.sloimay.mcvolume.block.VolBlock
+import com.sloimay.mcvolume.block.BlockPaletteId
+import com.sloimay.mcvolume.block.DEFAULT_BLOCK_ID
 import net.querz.nbt.tag.CompoundTag
 import java.util.*
 
