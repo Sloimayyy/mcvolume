@@ -112,7 +112,7 @@ fun McVolume.exportToSQuads(filePath: String,
     val airColor = byteArrayOf(0, 0, 0, 0)
     val unknownColor = byteArrayOf(0, 0, 0, 255.toByte())
     var colorTable: MutableList<ByteArray> = mutableListOf()
-    for (b in this.volBlockPalette) {
+    for (b in this.blockPalette.iter()) {
         var col: ByteArray
         if (b.paletteId == airBlock.paletteId) {
             col = airColor

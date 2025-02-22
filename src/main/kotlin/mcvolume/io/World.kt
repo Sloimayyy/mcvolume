@@ -77,7 +77,7 @@ fun McVolume.saveToRegions(regionFolderPath: String,
 
     // # Pre build the palette NBT's as we only have one per volume
     var paletteNbt = mutableListOf<CompoundTag>()
-    for (paletteBlock in this.volBlockPalette) {
+    for (paletteBlock in this.blockPalette.iter()) {
         //val paletteId = paletteBlock.paletteId
         val blockState = paletteBlock.state.stateStr
 
@@ -182,7 +182,7 @@ fun McVolume.saveToRegions(regionFolderPath: String,
                 // Gather the block ids in a YZX 3D array
                 var blocks = ShortArray(16 * 16 * 16)
 
-                var sectionMappings = MutableList<BlockPaletteId?>(this.volBlockPalette.size) { null }
+                var sectionMappings = MutableList<BlockPaletteId?>(this.blockPalette.size) { null }
                 var sectionPalette = ListTag(CompoundTag::class.java)
                 var runningMappedBId = 0.toShort()
 

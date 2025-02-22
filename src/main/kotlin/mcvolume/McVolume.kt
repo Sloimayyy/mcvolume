@@ -5,20 +5,23 @@ import com.sloimay.smath.vectors.ivec3
 import com.sloimay.mcvolume.block.VolBlock
 import com.sloimay.mcvolume.block.BlockState
 import com.sloimay.mcvolume.block.DEFAULT_BLOCK_ID
+import com.sloimay.mcvolume.blockpalette.ListBlockPalette
 import net.querz.nbt.tag.CompoundTag
 import java.util.*
 
 
-class McVolume {
+class McVolume private constructor(
+    defaultBlock: BlockState,
+) {
 
     internal var chunks: Array<Chunk?> = Array(0) { null }
-    internal var volBlockPalette: MutableList<VolBlock> = mutableListOf()
+    var blockPalette: ListBlockPalette = ListBlockPalette(defaultBlock)
 
     // Start and end in chunk grid space
     internal var chunkGridBound: IntBoundary = IntBoundary.new(ivec3(0, 0, 0), ivec3(0, 0, 0))
 
-    internal var loadedBound: IntBoundary = IntBoundary.new(ivec3(0, 0, 0), ivec3(0, 0, 0))
-    internal var wantedBound: IntBoundary = IntBoundary.new(ivec3(0, 0, 0), ivec3(0, 0, 0))
+    var loadedBound: IntBoundary = IntBoundary.new(ivec3(0, 0, 0), ivec3(0, 0, 0))
+    var wantedBound: IntBoundary = IntBoundary.new(ivec3(0, 0, 0), ivec3(0, 0, 0))
 
 
     companion object {
@@ -27,40 +30,33 @@ class McVolume {
             loadedAreaMax: IVec3,
             defaultBlockStr: String = "minecraft:air"
         ): McVolume {
-            var vol = McVolume()
-            vol.addPaletteBlock(defaultBlockStr)
+            var vol = McVolume(BlockState.fromStr(defaultBlockStr))
             vol.setLoadedArea(loadedAreaMin, loadedAreaMax)
 
             return vol
         }
     }
 
+
     fun getPaletteBlock(blockState: BlockState): VolBlock {
-        val stateStr = blockState.stateStr
+        return this.blockPalette.getOrAddBlock(blockState)
+
+        /*val stateStr = blockState.stateStr
 
         val blockIdx = volBlockPalette.indexOfFirst { stateStr == it.state.stateStr }
         if (blockIdx == -1) {
             return addPaletteBlock(blockState)
         } else {
             return volBlockPalette[blockIdx]
-        }
+        }*/
     }
 
     fun getPaletteBlock(blockStateStr: String): VolBlock {
         return getPaletteBlock(BlockState.fromStr(blockStateStr))
     }
 
-    fun getDefaultBlock() = this.volBlockPalette[0]
+    fun getDefaultBlock() = this.blockPalette.getDefaultBlock()
 
-    internal fun addPaletteBlock(blockState: String): VolBlock {
-        return addPaletteBlock(BlockState.fromStr(blockState))
-    }
-
-    internal fun addPaletteBlock(blockState: BlockState): VolBlock {
-        val volBlock = VolBlock.new(volBlockPalette.size.toShort(), blockState)
-        volBlockPalette.add(volBlock)
-        return volBlock
-    }
 
 
 
@@ -108,10 +104,10 @@ class McVolume {
         val chunkIdx = chunkGridBound.posToYzxIdx(posToChunkPos(pos))
         var chunk = chunks[chunkIdx]
         if (chunk == null) {
-            return volBlockPalette[DEFAULT_BLOCK_ID.toInt()]
+            return blockPalette.getFromId(DEFAULT_BLOCK_ID)
         } else {
             val localBlockCoords = posToChunkLocalCoords(pos)
-            return volBlockPalette[chunk.getBlock(localBlockCoords).toInt()]
+            return blockPalette.getFromId(chunk.getBlock(localBlockCoords))
         }
     }
 

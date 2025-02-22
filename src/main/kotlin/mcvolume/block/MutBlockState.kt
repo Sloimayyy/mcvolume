@@ -2,7 +2,6 @@ package me.sloimay.me.sloimay.mcvolume.block
 
 import com.sloimay.mcvolume.block.BlockState
 import com.sloimay.mcvolume.block.PropEntry
-import java.util.*
 
 
 class MutBlockState internal constructor
