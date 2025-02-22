@@ -5,6 +5,8 @@ import com.sloimay.smath.vectors.ivec3
 import com.sloimay.mcvolume.block.VolBlock
 import com.sloimay.mcvolume.block.BlockState
 import com.sloimay.mcvolume.block.DEFAULT_BLOCK_ID
+import com.sloimay.mcvolume.blockpalette.BlockPalette
+import com.sloimay.mcvolume.blockpalette.HashedBlockPalette
 import com.sloimay.mcvolume.blockpalette.ListBlockPalette
 import net.querz.nbt.tag.CompoundTag
 import java.util.*
@@ -15,7 +17,7 @@ class McVolume private constructor(
 ) {
 
     internal var chunks: Array<Chunk?> = Array(0) { null }
-    var blockPalette: ListBlockPalette = ListBlockPalette(defaultBlock)
+    var blockPalette: BlockPalette = ListBlockPalette(defaultBlock)
 
     // Start and end in chunk grid space
     internal var chunkGridBound: IntBoundary = IntBoundary.new(ivec3(0, 0, 0), ivec3(0, 0, 0))
@@ -39,6 +41,17 @@ class McVolume private constructor(
 
 
     fun getPaletteBlock(blockState: BlockState): VolBlock {
+        // If the palette gets big enough, replace it by a hashmap block palette instead
+        if (this.blockPalette.size > 5 && blockPalette is ListBlockPalette) {
+            val newPalette = HashedBlockPalette(this.blockPalette.getDefaultBlock().state)
+            // MAKE SURE!! that blocks in the palette map to the same id when handing over
+            // Feels like this is gonna bite me in the ahh later down the line lmao
+            for (b in this.blockPalette.iter()) {
+                newPalette.getOrAddBlock(b.state)
+            }
+            this.blockPalette = newPalette
+        }
+
         return this.blockPalette.getOrAddBlock(blockState)
 
         /*val stateStr = blockState.stateStr

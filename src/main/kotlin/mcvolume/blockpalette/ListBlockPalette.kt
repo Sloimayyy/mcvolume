@@ -36,7 +36,6 @@ class ListBlockPalette(defaultBlock: BlockState) : BlockPalette() {
     }
 
     override fun getOrAddBlock(bs: BlockState): VolBlock {
-        println(this.palette.size)
         val id = idOf(bs)
         if (id == -1) {
             return addBlock(bs)

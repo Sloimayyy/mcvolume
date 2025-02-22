@@ -28,12 +28,12 @@ internal fun blockPaletteSpeedTesting() {
         return chars[rand.nextInt(0, chars.length)]
     }
 
-    val blockCount = 100
-    val blocks = mutableListOf<String>()
+    val blockCount = 10
+    val blocks = mutableListOf<BlockState>()
 
     for (i in 0 until blockCount) {
         val b = (0 until 100).map { getRandChar() }.joinToString(separator = "")
-        blocks.add(b)
+        blocks.add(BlockState.fromStr(b))
     }
 
 
@@ -44,7 +44,9 @@ internal fun blockPaletteSpeedTesting() {
 
 
 
-    val size = 100
+    val size = 400
+
+    println(size*size*size)
 
     val blocksToPlace = (0 until (size*size*size)).map { blocks[rand.nextInt(0, blocks.size)] }
 
