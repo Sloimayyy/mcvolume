@@ -12,6 +12,7 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.TimeSource
 
 
+
 @OptIn(ExperimentalTime::class)
 internal fun blockPaletteSpeedTesting() {
 
@@ -28,7 +29,7 @@ internal fun blockPaletteSpeedTesting() {
         return chars[rand.nextInt(0, chars.length)]
     }
 
-    val blockCount = 10
+    val blockCount = 1000
     val blocks = mutableListOf<BlockState>()
 
     for (i in 0 until blockCount) {
@@ -60,7 +61,7 @@ internal fun blockPaletteSpeedTesting() {
     for (y in 0 until size) for (z in 0 until size) for (x in 0 until size) {
 
         val b = blocksToPlace[i]
-        val volBlock = vol.getPaletteBlock(b)
+        val volBlock = vol.getEnsuredPaletteBlock(b)
         vol.setBlock(ivec3(x, y, z), volBlock)
 
         i++
@@ -81,6 +82,13 @@ internal fun blockPaletteSpeedTesting() {
 
 
 internal fun main() {
+
+
+    val a = SNBTUtil.fromSNBT("{test:'hello'}", true)
+
+    println(a)
+
+    return
 
     blockPaletteSpeedTesting()
 
@@ -103,7 +111,7 @@ internal fun main() {
 
     val v = McVolume.new(ivec3(0, 0, 0), ivec3(100, 100, 100))
 
-    val stone = v.getPaletteBlock(
+    val stone = v.getEnsuredPaletteBlock(
         BlockState.new("minecraft", "stone", listOf(
             "up" to "false",
             "down" to "side"

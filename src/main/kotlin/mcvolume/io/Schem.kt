@@ -67,6 +67,7 @@ private fun McVolume.Companion.fromSchem3(fileNbt: NamedTag): McVolume {
         c
     }
 
+
     // Blocks first
     run {
         val paletteNbt = blocksNbt.getCompoundTag("Palette")
@@ -91,7 +92,7 @@ private fun McVolume.Companion.fromSchem3(fileNbt: NamedTag): McVolume {
         val defaultBlock = vol.getDefaultBlock()
         var palette = MutableList(volPaletteLength){ defaultBlock }
         paletteNbt.forEach { k, v ->
-            val block = vol.getPaletteBlock(k)
+            val block = vol.getEnsuredPaletteBlock(k)
             val idx = (v as IntTag).asInt()
             palette[idx] = block
         }
@@ -130,17 +131,11 @@ private fun McVolume.Companion.fromSchem2(fileNbt: NamedTag): McVolume {
     var schemOffset = if (schemNbt.containsKey("Offset")) {
         IVec3.fromArray(schemNbt.getIntArray("Offset"))
     } else {
-        IVec3.new(0, 0, 0)
+        IVec3(0, 0, 0)
     }
-    schemOffset = schemOffset.withX(
-        if (metadataNbt.containsKey("WEOffsetX")) { metadataNbt.getInt("WEOffsetX") } else { schemOffset.x }
-    )
-    schemOffset = schemOffset.withY(
-        if (metadataNbt.containsKey("WEOffsetY")) { metadataNbt.getInt("WEOffsetY") } else { schemOffset.y }
-    )
-    schemOffset = schemOffset.withZ(
-        if (metadataNbt.containsKey("WEOffsetZ")) { metadataNbt.getInt("WEOffsetZ") } else { schemOffset.z }
-    )
+    schemOffset = schemOffset.withX( metadataNbt.getIntTag("WEOffsetX")?.asInt() ?: schemOffset.x )
+    schemOffset = schemOffset.withY( metadataNbt.getIntTag("WEOffsetY")?.asInt() ?: schemOffset.y )
+    schemOffset = schemOffset.withZ( metadataNbt.getIntTag("WEOffsetZ")?.asInt() ?: schemOffset.z )
 
     // [Min; Max)
     val lowBound = schemOffset
@@ -174,7 +169,7 @@ private fun McVolume.Companion.fromSchem2(fileNbt: NamedTag): McVolume {
         val defaultBlock = vol.getDefaultBlock()
         var palette = MutableList(volPaletteLength){ defaultBlock }
         paletteNbt.forEach { k, v ->
-            val block = vol.getPaletteBlock(k)
+            val block = vol.getEnsuredPaletteBlock(k)
             val idx = (v as IntTag).asInt()
             palette[idx] = block
         }
@@ -191,6 +186,8 @@ private fun McVolume.Companion.fromSchem2(fileNbt: NamedTag): McVolume {
 
     return vol
 }
+
+
 
 
 @OptIn(ExperimentalTime::class)

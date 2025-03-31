@@ -15,6 +15,10 @@ class ListBlockPalette(defaultBlock: BlockState) : BlockPalette() {
         addBlock(defaultBlock)
     }
 
+    override fun getBlock(bs: BlockState): VolBlock? {
+        val id = idOf(bs)
+        return if (id == -1) return null else palette[id]
+    }
 
     /**
      * Returns -1 if not found

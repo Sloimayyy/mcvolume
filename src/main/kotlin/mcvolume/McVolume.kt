@@ -39,8 +39,7 @@ class McVolume private constructor(
         }
     }
 
-
-    fun getPaletteBlock(blockState: BlockState): VolBlock {
+    fun getEnsuredPaletteBlock(blockState: BlockState): VolBlock {
         // If the palette gets big enough, replace it by a hashmap block palette instead
         if (this.blockPalette.size > 5 && blockPalette is ListBlockPalette) {
             val newPalette = HashedBlockPalette(this.blockPalette.getDefaultBlock().state)
@@ -53,24 +52,22 @@ class McVolume private constructor(
         }
 
         return this.blockPalette.getOrAddBlock(blockState)
-
-        /*val stateStr = blockState.stateStr
-
-        val blockIdx = volBlockPalette.indexOfFirst { stateStr == it.state.stateStr }
-        if (blockIdx == -1) {
-            return addPaletteBlock(blockState)
-        } else {
-            return volBlockPalette[blockIdx]
-        }*/
     }
 
-    fun getPaletteBlock(blockStateStr: String): VolBlock {
+    fun getEnsuredPaletteBlock(blockStateStr: String): VolBlock {
+        return getEnsuredPaletteBlock(BlockState.fromStr(blockStateStr))
+    }
+
+    fun getPaletteBlock(blockState: BlockState): VolBlock? {
+        return this.blockPalette.getBlock(blockState)
+    }
+
+    fun getPaletteBlock(blockStateStr: String): VolBlock? {
         return getPaletteBlock(BlockState.fromStr(blockStateStr))
     }
 
+
     fun getDefaultBlock() = this.blockPalette.getDefaultBlock()
-
-
 
 
     fun setBlock(pos: IVec3, volBlock: VolBlock) {
@@ -91,6 +88,10 @@ class McVolume private constructor(
         }
     }
 
+    /**
+     * We're storing a reference to the inputted nbt, so any modification made outside the volume will have
+     * an effect inside too.
+     */
     fun setTileData(pos: IVec3, tileData: CompoundTag?) {
         if (!loadedBound.posInside(pos)) { throw Error("Pos not in loaded area") }
 
@@ -124,6 +125,9 @@ class McVolume private constructor(
         }
     }
 
+    /**
+     * The tile data returned is mutable
+     */
     fun getTileData(pos: IVec3): CompoundTag? {
         if (!loadedBound.posInside(pos)) { throw Error("Pos not in loaded area") }
 
@@ -193,6 +197,7 @@ class McVolume private constructor(
         }
     }
 
+
     fun getBuildBounds(): IntBoundary {
         val buildChunkBoundsOption = this.getBuildChunkBounds()
         // All chunks empty, so we return the block at 0, 0, 0
@@ -256,6 +261,8 @@ class McVolume private constructor(
 
         return Optional.of(IntBoundary.new(minChunkPos, maxChunkPos + 1))
     }
+
+
 
     private fun posToChunkPos(pos: IVec3): IVec3 {
         return pos shr CHUNK_BIT_SIZE

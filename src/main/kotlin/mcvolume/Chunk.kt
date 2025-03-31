@@ -48,14 +48,14 @@ class Chunk private constructor (
     }
 
     fun getTileData(localCoords: IVec3): CompoundTag? {
-        return this.tileData[localCoords]?.clone()
+        return this.tileData[localCoords]
     }
 
     fun setTileData(localCoords: IVec3, data: CompoundTag?) {
         if (data == null) {
             this.tileData.remove(localCoords)
         } else {
-            this.tileData[localCoords] = data.clone()
+            this.tileData[localCoords] = data
         }
     }
 

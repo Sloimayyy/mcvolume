@@ -12,6 +12,8 @@ abstract class BlockPalette {
 
     abstract fun getOrAddBlock(bs: BlockState): VolBlock
 
+    abstract fun getBlock(bs: BlockState): VolBlock?
+
     abstract fun getFromId(id: BlockPaletteId): VolBlock
 
     abstract fun iter(): Iterator<VolBlock>

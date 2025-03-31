@@ -5,8 +5,10 @@ plugins {
     `maven-publish`
 }
 
-group = "com.sloimay"
-version = "1.0-SNAPSHOT"
+group = "com.github.sloimayyy"
+version = "1.0.0"
+
+
 
 repositories {
     google()
@@ -18,26 +20,19 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib"))
-    //testImplementation(kotlin("test"))
-    implementation("com.sloimay:smath:1.0.0")
-
+    implementation("com.github.sloimayyy:smath:v1.0.4")
     implementation("com.github.Querz:NBT:6.1")
-    //implementation("com.google.code.gson:gson:2.10.1")
-    implementation("com.beust:klaxon:5.5")
 }
 
 publishing {
     publications {
         create<MavenPublication>("maven") {
-            groupId = "com.sloimay"
+            groupId = project.group as String
             artifactId = "mcvolume"
-            version = "1.0.0"
+            version = project.version as String
 
             from(components["java"])
         }
-    }
-    repositories {
-        mavenLocal()
     }
 }
 

@@ -85,7 +85,8 @@ private class SerialChunk() {
  *
  * Rewrite of the rust implementation
  *
- * Export to the new Sloimay Quad file format
+ * Export to the new Sloimay Quad file format. For any contributors stumbling upon this,
+ * it's a format I personally use for a workflow program I made, don't worry about it
  *
  */
 
@@ -108,7 +109,7 @@ fun McVolume.exportToSQuads(filePath: String,
     var fileBytes = mutableListOf<Byte>()
 
     // # Make color table (vec of colors instead of hashmap
-    val airBlock = this.getPaletteBlock("minecraft:air")
+    val airBlock = this.getEnsuredPaletteBlock("minecraft:air")
     val airColor = byteArrayOf(0, 0, 0, 0)
     val unknownColor = byteArrayOf(0, 0, 0, 255.toByte())
     var colorTable: MutableList<ByteArray> = mutableListOf()

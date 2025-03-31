@@ -12,8 +12,16 @@ class HashedBlockPalette(defaultBlock: BlockState) : BlockPalette() {
     override val size
         get() = listPalette.size
 
+    init {
+        addBlock(defaultBlock)
+    }
+
     override fun getDefaultBlock(): VolBlock {
         return this.listPalette[0]
+    }
+
+    override fun getBlock(bs: BlockState): VolBlock? {
+        return hashPalette[bs]
     }
 
     override fun getOrAddBlock(bs: BlockState): VolBlock {
