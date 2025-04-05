@@ -75,10 +75,10 @@ open class BlockState internal constructor(val resLoc: String,
 
     }
 
-    fun getProp(propName: String): Optional<String> {
+    fun getProp(propName: String): String? {
         for ((prop, v) in props)
-            if (prop == propName) return Optional.of(v)
-        return Optional.empty()
+            if (prop == propName) return v
+        return null
     }
 
     /**
@@ -88,11 +88,9 @@ open class BlockState internal constructor(val resLoc: String,
     fun looselyMatches(other: BlockState): Boolean {
         if (this.fullName != other.fullName) return false
         for ((pn, pv) in this.props) {
-            val otherPvOpt = other.getProp(pn)
-            if (otherPvOpt.isEmpty) continue // Other prop is not defined
+            val otherPv = other.getProp(pn) ?: continue// Other prop is not defined
             // Got two props in common, check if they're the same. If not we know
             // they don't loosely match
-            val otherPv = otherPvOpt.get()
             if (pv != otherPv) return false
         }
         return true
