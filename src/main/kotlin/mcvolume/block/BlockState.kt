@@ -8,10 +8,16 @@ import java.util.*
 internal data class PropEntry(var k: String, var v: String)
 
 
-
 open class BlockState internal constructor(val resLoc: String,
                                            val name: String,
                                            internal val props: MutableList<PropEntry>) {
+
+    /**
+     * The main reason why we're using strings is so that it can
+     * represent modded blocks too. If anyone contributing has a better
+     * idea than strings, or ideas on how to make this class much faster
+     * and efficient please do send a pull request or let me know lol
+     */
 
     val fullName = "$resLoc:$name"
     val hasProps = props.isNotEmpty()
@@ -76,8 +82,8 @@ open class BlockState internal constructor(val resLoc: String,
     }
 
     fun getProp(propName: String): String? {
-        for ((prop, v) in props)
-            if (prop == propName) return v
+        //props.firstOrNull { it.k == propName }?.v
+        for ((prop, v) in props) if (prop == propName) return v
         return null
     }
     fun getPropDefault(propName: String, default: String): String = getProp(propName) ?: default

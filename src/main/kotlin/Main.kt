@@ -38,14 +38,15 @@ private fun blockVersioningTest() {
 
     val size = 400
     val blocksToPlace = (0 until size*size*size)
-        .map { vol.getEnsuredPaletteBlock(blockStates.random(rand)) }
+        //.map { vol.getEnsuredPaletteBlock(blockStates.random(rand)) }
+        .map { vol.getEnsuredPaletteBlock(blockStates.random(rand).stateStr) }
         //.map { blockStates.random(rand) }
 
     val start = ts.markNow()
     var i = 0
     //val volBlock = blocksToPlace[0]
     for (y in 0 until size) for (z in 0 until size) for (x in 0 until size) {
-        vol.setBlockState(ivec3(x, y, z), blocksToPlace[i])
+        vol.setBlockState(ivec3(x, y, z), blocksToPlace[i].state.stateStr)
         i++
     }
     println(start.elapsedNow())

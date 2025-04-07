@@ -11,13 +11,16 @@ import com.sloimay.mcvolume.blockpalette.ListBlockPalette
 import net.querz.nbt.tag.CompoundTag
 import java.util.*
 
-
+/**
+ * Non thread safe
+ */
 class McVolume private constructor(
     defaultBlock: BlockState,
 ) {
 
     internal var chunks: Array<Chunk?> = Array(0) { null }
-    var blockPalette: BlockPalette = ListBlockPalette(defaultBlock)
+    internal var blockPalette: BlockPalette = ListBlockPalette(defaultBlock)
+    internal val blockStateCache: HashMap<String, BlockState> = hashMapOf()
 
     // Start and end in chunk grid space
     internal var chunkGridBound: IntBoundary = IntBoundary.new(ivec3(0, 0, 0), ivec3(0, 0, 0))
@@ -55,7 +58,7 @@ class McVolume private constructor(
     }
 
     fun getEnsuredPaletteBlock(blockStateStr: String): VolBlockState {
-        return getEnsuredPaletteBlock(BlockState.fromStr(blockStateStr))
+        return getEnsuredPaletteBlock(strToBsCached(blockStateStr))
     }
 
     fun getPaletteBlock(blockState: BlockState): VolBlockState? {
@@ -70,13 +73,20 @@ class McVolume private constructor(
     fun getDefaultBlock() = this.blockPalette.getDefaultBlock()
 
     /**
-     * About 1.5-2.0x slower than setBlockState(VolBlockState)
+     * About 1.5-2.0x slower than setVolBlockState
      */
     fun setBlockState(pos: IVec3, blockState: BlockState) {
-        setBlockState(pos, getEnsuredPaletteBlock(blockState))
+        setVolBlockState(pos, getEnsuredPaletteBlock(blockState))
     }
 
-    fun setBlockState(pos: IVec3, volBlockState: VolBlockState) {
+    /**
+     * About 6x slower than setVolBlockState
+     */
+    fun setBlockStateStr(pos: IVec3, blockStateString: String) {
+        setBlockState(pos, strToBsCached(blockStateString))
+    }
+
+    fun setVolBlockState(pos: IVec3, volBlockState: VolBlockState) {
         if (!loadedBound.posInside(pos)) { throw Error("Pos not in loaded area") }
 
         val chunkIdx = chunkGridBound.posToYzxIdx(posToChunkPos(pos))
@@ -270,7 +280,9 @@ class McVolume private constructor(
         return Optional.of(IntBoundary.new(minChunkPos, maxChunkPos + 1))
     }
 
-
+    private fun strToBsCached(bsStr: String): BlockState {
+        return blockStateCache.getOrPut(bsStr) { BlockState.fromStr(bsStr) }
+    }
 
     private fun posToChunkPos(pos: IVec3): IVec3 {
         return pos shr CHUNK_BIT_SIZE
