@@ -2,7 +2,7 @@ package com.sloimay.mcvolume
 
 import com.sloimay.smath.vectors.IVec3
 import com.sloimay.smath.vectors.ivec3
-import com.sloimay.mcvolume.block.VolBlock
+import com.sloimay.mcvolume.block.VolBlockState
 import com.sloimay.mcvolume.block.BlockState
 import com.sloimay.mcvolume.block.DEFAULT_BLOCK_ID
 import com.sloimay.mcvolume.blockpalette.BlockPalette
@@ -39,7 +39,7 @@ class McVolume private constructor(
         }
     }
 
-    fun getEnsuredPaletteBlock(blockState: BlockState): VolBlock {
+    fun getEnsuredPaletteBlock(blockState: BlockState): VolBlockState {
         // If the palette gets big enough, replace it by a hashmap block palette instead
         if (this.blockPalette.size > 5 && blockPalette is ListBlockPalette) {
             val newPalette = HashedBlockPalette(this.blockPalette.getDefaultBlock().state)
@@ -54,37 +54,43 @@ class McVolume private constructor(
         return this.blockPalette.getOrAddBlock(blockState)
     }
 
-    fun getEnsuredPaletteBlock(blockStateStr: String): VolBlock {
+    fun getEnsuredPaletteBlock(blockStateStr: String): VolBlockState {
         return getEnsuredPaletteBlock(BlockState.fromStr(blockStateStr))
     }
 
-    fun getPaletteBlock(blockState: BlockState): VolBlock? {
+    fun getPaletteBlock(blockState: BlockState): VolBlockState? {
         return this.blockPalette.getBlock(blockState)
     }
 
-    fun getPaletteBlock(blockStateStr: String): VolBlock? {
+    fun getPaletteBlock(blockStateStr: String): VolBlockState? {
         return getPaletteBlock(BlockState.fromStr(blockStateStr))
     }
 
 
     fun getDefaultBlock() = this.blockPalette.getDefaultBlock()
 
+    /**
+     * About 1.5-2.0x slower than setBlockState(VolBlockState)
+     */
+    fun setBlockState(pos: IVec3, blockState: BlockState) {
+        setBlockState(pos, getEnsuredPaletteBlock(blockState))
+    }
 
-    fun setBlock(pos: IVec3, volBlock: VolBlock) {
+    fun setBlockState(pos: IVec3, volBlockState: VolBlockState) {
         if (!loadedBound.posInside(pos)) { throw Error("Pos not in loaded area") }
 
         val chunkIdx = chunkGridBound.posToYzxIdx(posToChunkPos(pos))
         var chunk = chunks[chunkIdx]
         if (chunk == null) {
-            if (volBlock.paletteId != DEFAULT_BLOCK_ID) {
+            if (volBlockState.paletteId != DEFAULT_BLOCK_ID) {
                 val newChunk = Chunk.new()
                 chunks[chunkIdx] = newChunk
                 val localBlockCoords = posToChunkLocalCoords(pos)
-                newChunk.setBlock(localBlockCoords, volBlock)
+                newChunk.setBlock(localBlockCoords, volBlockState)
             }
         } else {
             val localBlockCoords = posToChunkLocalCoords(pos)
-            chunk.setBlock(localBlockCoords, volBlock)
+            chunk.setBlock(localBlockCoords, volBlockState)
         }
     }
 
@@ -112,7 +118,7 @@ class McVolume private constructor(
 
 
 
-    fun getBlock(pos: IVec3): VolBlock {
+    fun getVolBlockState(pos: IVec3): VolBlockState {
         if (!loadedBound.posInside(pos)) { throw Error("Pos not in loaded area") }
 
         val chunkIdx = chunkGridBound.posToYzxIdx(posToChunkPos(pos))
@@ -124,6 +130,8 @@ class McVolume private constructor(
             return blockPalette.getFromId(chunk.getBlock(localBlockCoords))
         }
     }
+
+    fun getBlockState(pos: IVec3): BlockState = getVolBlockState(pos).state
 
     /**
      * The tile data returned is mutable

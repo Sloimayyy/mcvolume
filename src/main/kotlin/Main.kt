@@ -8,8 +8,52 @@ import net.querz.nbt.io.SNBTUtil
 import net.querz.nbt.tag.ByteTag
 import net.querz.nbt.tag.CompoundTag
 import kotlin.random.Random
+import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 import kotlin.time.TimeSource
+
+
+
+
+
+
+
+@OptIn(ExperimentalTime::class)
+private fun blockVersioningTest() {
+
+    val ts = TimeSource.Monotonic
+
+    val vol = McVolume.new(
+        IVec3.new(0, 0, 0),
+        IVec3.new(1000, 1000, 1000),
+    )
+
+    val rand = Random(95837)
+    fun randChar() = "abcdefghijklmnopqrstuvwxyz1234567890_".random(rand)
+
+    val blockCount = 1000
+    val blockStates = (0 until blockCount).map {
+        BlockState.fromStr((0 until 100).joinToString(separator = "") { randChar().toString() })
+    }
+
+    val size = 400
+    val blocksToPlace = (0 until size*size*size)
+        .map { vol.getEnsuredPaletteBlock(blockStates.random(rand)) }
+        //.map { blockStates.random(rand) }
+
+    val start = ts.markNow()
+    var i = 0
+    //val volBlock = blocksToPlace[0]
+    for (y in 0 until size) for (z in 0 until size) for (x in 0 until size) {
+        vol.setBlockState(ivec3(x, y, z), blocksToPlace[i])
+        i++
+    }
+    println(start.elapsedNow())
+    println("blocks per second: ${i.toDouble() / start.elapsedNow().toDouble(DurationUnit.SECONDS)}")
+
+}
+
+
 
 
 
@@ -49,7 +93,9 @@ internal fun blockPaletteSpeedTesting() {
 
     println(size*size*size)
 
-    val blocksToPlace = (0 until (size*size*size)).map { blocks[rand.nextInt(0, blocks.size)] }
+    val blocksToPlace = (0 until (size*size*size))
+        .map { blocks[rand.nextInt(0, blocks.size)]
+    }
 
     println("started")
     val ts = TimeSource.Monotonic
@@ -62,7 +108,7 @@ internal fun blockPaletteSpeedTesting() {
 
         val b = blocksToPlace[i]
         val volBlock = vol.getEnsuredPaletteBlock(b)
-        vol.setBlock(ivec3(x, y, z), volBlock)
+        vol.setBlockState(ivec3(x, y, z), volBlock)
 
         i++
     }
@@ -82,6 +128,15 @@ internal fun blockPaletteSpeedTesting() {
 
 
 internal fun main() {
+
+
+    blockVersioningTest()
+
+
+
+
+
+    return
 
 
     val a = SNBTUtil.fromSNBT("{test:'hello'}", true)

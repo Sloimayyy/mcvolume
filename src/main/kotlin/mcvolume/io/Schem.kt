@@ -4,7 +4,7 @@ package com.sloimay.mcvolume.io
 import com.sloimay.smath.vectors.IVec3
 import com.sloimay.smath.vectors.ivec3
 import com.sloimay.mcvolume.McvUtils.Companion.readVarint
-import com.sloimay.mcvolume.block.VolBlock
+import com.sloimay.mcvolume.block.VolBlockState
 import com.sloimay.mcvolume.McVolume
 import net.querz.nbt.io.NBTUtil
 import net.querz.nbt.io.NamedTag
@@ -195,7 +195,7 @@ private fun McVolume.loadVarintBlockStates(
     schemSize: IVec3,
     schemOffset: IVec3,
     blockVolumeData: ByteArray,
-    palette: List<VolBlock>,
+    palette: List<VolBlockState>,
     defaultBlockInPaletteId: Int,
 ) {
     val timeSource = TimeSource.Monotonic
@@ -219,7 +219,7 @@ private fun McVolume.loadVarintBlockStates(
             println(this.loadedBound)*/
             val worldPos = ivec3(bvX, bvY, bvZ) + schemOffset
             val block = palette[blockId]
-            this.setBlock(worldPos, block)
+            this.setBlockState(worldPos, block)
         }
 
         // Iterate position in block data

@@ -2,7 +2,7 @@ package com.sloimay.mcvolume
 
 import com.sloimay.smath.vectors.IVec3
 import com.sloimay.smath.vectors.ivec3
-import com.sloimay.mcvolume.block.VolBlock
+import com.sloimay.mcvolume.block.VolBlockState
 import com.sloimay.mcvolume.block.BlockPaletteId
 import com.sloimay.mcvolume.block.DEFAULT_BLOCK_ID
 import net.querz.nbt.tag.CompoundTag
@@ -59,8 +59,8 @@ class Chunk private constructor (
         }
     }
 
-    fun setBlock(localCoords: IVec3, volBlock: VolBlock) {
-        blocks[localToBlockIdx(localCoords)] = volBlock.paletteId
+    fun setBlock(localCoords: IVec3, volBlockState: VolBlockState) {
+        blocks[localToBlockIdx(localCoords)] = volBlockState.paletteId
     }
 
     fun getBlock(localCoords: IVec3): BlockPaletteId {
