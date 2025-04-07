@@ -80,6 +80,8 @@ open class BlockState internal constructor(val resLoc: String,
             if (prop == propName) return v
         return null
     }
+    fun getPropDefault(propName: String, default: String): String = getProp(propName) ?: default
+
 
     /**
      * A blockstate loosely matches another if they have the same fullName +
