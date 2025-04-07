@@ -219,7 +219,7 @@ private fun McVolume.loadVarintBlockStates(
             println(this.loadedBound)*/
             val worldPos = ivec3(bvX, bvY, bvZ) + schemOffset
             val block = palette[blockId]
-            this.setBlockState(worldPos, block)
+            this.setVolBlockState(worldPos, block)
         }
 
         // Iterate position in block data

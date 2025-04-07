@@ -46,7 +46,7 @@ private fun blockVersioningTest() {
     var i = 0
     //val volBlock = blocksToPlace[0]
     for (y in 0 until size) for (z in 0 until size) for (x in 0 until size) {
-        vol.setBlockState(ivec3(x, y, z), blocksToPlace[i].state.stateStr)
+        vol.setBlockStateStr(ivec3(x, y, z), blocksToPlace[i].state.stateStr)
         i++
     }
     println(start.elapsedNow())
@@ -109,7 +109,7 @@ internal fun blockPaletteSpeedTesting() {
 
         val b = blocksToPlace[i]
         val volBlock = vol.getEnsuredPaletteBlock(b)
-        vol.setBlockState(ivec3(x, y, z), volBlock)
+        vol.setVolBlockState(ivec3(x, y, z), volBlock)
 
         i++
     }
