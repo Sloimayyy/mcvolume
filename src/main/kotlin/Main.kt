@@ -16,10 +16,14 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.TimeSource
 
 
-
-
-
-
+/**
+ *
+ * TODO:
+ *  Look into unimi's fast utils:
+ *      https://github.com/karussell/fastutil/blob/master/src/it/unimi/dsi/fastutil/ints/Int2ObjectMap.java
+ *  That's how World Edit's block state cache works
+ *
+ */
 
 
 

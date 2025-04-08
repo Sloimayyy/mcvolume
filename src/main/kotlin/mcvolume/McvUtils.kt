@@ -256,6 +256,7 @@ class GrowableByteBuf(initialCapacity: Int = 16, private val byteOrder: ByteOrde
     private var size: Int = 0
 
     init {
+        require(initialCapacity > 0) { "Initial capacity must be greater than 0 but got ${initialCapacity}." }
         this.buffer = ByteBuffer.allocate(initialCapacity)
         this.buffer.order(byteOrder)
     }
@@ -266,7 +267,12 @@ class GrowableByteBuf(initialCapacity: Int = 16, private val byteOrder: ByteOrde
         size = max(size, endPos)
         while (size > buffer.limit()) {
             val pos = buffer.position()
-            val newBuffer = ByteBuffer.allocate(buffer.capacity() * 2)
+            val oldCap = size
+            val newCapAttempt = buffer.capacity() * 2
+            // No idea what the max VM amount is but 2_000_000_000 is decently close to
+            // 2^31 - 1 without the VM yelling at me XD
+            val newCap = if (newCapAttempt > 0) newCapAttempt else max(2_000_000_000, oldCap)
+            val newBuffer = ByteBuffer.allocate(newCap)
             newBuffer.order(byteOrder)
             buffer.flip()
             newBuffer.put(buffer)

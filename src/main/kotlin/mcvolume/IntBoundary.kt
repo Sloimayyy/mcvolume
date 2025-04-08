@@ -90,6 +90,13 @@ data class IntBoundary(
         )
     }
 
+    fun fullyInside(other: IntBoundary): Boolean {
+        if (!this.intersects(other)) return false
+        // If this clamped inside other didn't change, then
+        // we are fully inside
+        return this.getClampedInside(other).eq(this)
+    }
+
     fun volume() = (b - a).elementProduct()
 
     fun move(v: IVec3) = new(a + v, b + v)
