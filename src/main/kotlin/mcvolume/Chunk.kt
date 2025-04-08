@@ -18,11 +18,10 @@ const val CHUNK_BLOCK_COUNT = CHUNK_SIDE_LEN * CHUNK_SIDE_LEN * CHUNK_SIDE_LEN
 
 
 
-class Chunk private constructor (
+class Chunk internal constructor (
     internal val blocks: ShortArray,
     internal val tileData: HashMap<IVec3, CompoundTag>,
-)
-{
+) {
 
     companion object {
 

@@ -2,15 +2,68 @@ package com.sloimay
 
 import com.sloimay.smath.vectors.ivec3
 import com.sloimay.mcvolume.McVolume
+import com.sloimay.mcvolume.McvUtils.Companion.makePackedLongArrLF
+import com.sloimay.mcvolume.McvUtils.Companion.unpackLongArrLFIntoShortArray
 import com.sloimay.mcvolume.block.BlockState
 import com.sloimay.smath.vectors.IVec3
 import net.querz.nbt.io.SNBTUtil
 import net.querz.nbt.tag.ByteTag
 import net.querz.nbt.tag.CompoundTag
 import kotlin.random.Random
+import kotlin.random.nextInt
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 import kotlin.time.TimeSource
+
+
+
+
+
+
+
+
+
+
+private fun longPackingTesting() {
+
+    val rand = Random(35898)
+
+    var i = 0
+
+    while (true) {
+        if (i and 0xFFFF == 0) {
+            println("test ${i}")
+        }
+        //println("=========== new test")
+        val valuesBitSize = rand.nextInt(1..16)
+        //println("values bit size: ${valuesBitSize}")
+        val valueMax = (1 shl valuesBitSize)
+        val arrSize = rand.nextInt(0, 2000)
+        //println("arr size: ${arrSize}")
+
+
+        val arr = ShortArray(arrSize) { rand.nextInt(0, valueMax).toShort() }
+        //println("start arr ${arr.toList()}")
+
+        val packedArr = makePackedLongArrLF(arr, valuesBitSize)
+        //println("long arr ${packedArr.toList()}")
+
+        val unpackedArr = unpackLongArrLFIntoShortArray(packedArr, valuesBitSize, arr.size)
+        //println("end arr ${unpackedArr.toList()}")
+
+        if (!arr.withIndex().all { (i, v) -> v == unpackedArr[i] }) {
+
+            //println("start arr ${arr.toList()}")
+            //println("long arr ${packedArr.toList()}")
+            //println("end arr ${unpackedArr.toList()}")
+            error("didn't work")
+        }
+
+        i += 1
+    }
+
+
+}
 
 
 
@@ -131,7 +184,10 @@ internal fun blockPaletteSpeedTesting() {
 internal fun main() {
 
 
-    blockVersioningTest()
+    longPackingTesting()
+
+
+    //blockVersioningTest()
 
 
 

@@ -4,14 +4,14 @@ import com.sloimay.mcvolume.block.BlockPaletteId
 import com.sloimay.mcvolume.block.BlockState
 import com.sloimay.mcvolume.block.VolBlockState
 
-class ListBlockPalette(defaultBlock: BlockState) : BlockPalette() {
+class ListBlockPalette() : BlockPalette() {
 
-    private val palette = mutableListOf<VolBlockState>()
+    internal var palette = mutableListOf<VolBlockState>()
 
     override val size
         get() = this.palette.size
 
-    init {
+    internal constructor(defaultBlock: BlockState) : this() {
         addBlock(defaultBlock)
     }
 
@@ -24,8 +24,7 @@ class ListBlockPalette(defaultBlock: BlockState) : BlockPalette() {
      * Returns -1 if not found
      */
     private fun idOf(bs: BlockState): Int {
-        val stateStr = bs.stateStr
-        return palette.indexOfFirst { stateStr == it.state.stateStr }
+        return palette.indexOfFirst { bs == it.state }
     }
 
     private fun addBlock(bs: BlockState): VolBlockState {
@@ -54,6 +53,15 @@ class ListBlockPalette(defaultBlock: BlockState) : BlockPalette() {
 
     override fun iter(): Iterator<VolBlockState> {
         return this.palette.iterator()
+    }
+
+
+    override fun populateFromDeserializedVbsArr(volBlockStates: List<VolBlockState>) {
+        palette = volBlockStates.toMutableList()
+    }
+
+    override fun serialize(): List<VolBlockState> {
+        return palette.toList()
     }
 
 

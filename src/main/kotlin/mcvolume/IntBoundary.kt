@@ -90,6 +90,8 @@ data class IntBoundary(
         )
     }
 
+    fun volume() = (b - a).elementProduct()
+
     fun move(v: IVec3) = new(a + v, b + v)
 
     fun expand(dims: IVec3) = new(a - dims, b + dims)

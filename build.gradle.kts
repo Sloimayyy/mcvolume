@@ -27,8 +27,8 @@ dependencies {
 publishing {
     publications {
         create<MavenPublication>("maven") {
-            groupId = project.group as String
-            artifactId = "mcvolume"
+            groupId = "com.sloimay"
+            artifactId = "mcvolumedev"
             version = project.version as String
 
             from(components["java"])

@@ -14,32 +14,36 @@ import java.util.*
 /**
  * Non thread safe
  */
-class McVolume private constructor(
-    defaultBlock: BlockState,
+class McVolume internal constructor(
+    internal var chunks: Array<Chunk?>,
+    internal var blockPalette: BlockPalette,
+    internal val blockStateCache: HashMap<String, BlockState>,
 ) {
-
-    internal var chunks: Array<Chunk?> = Array(0) { null }
-    internal var blockPalette: BlockPalette = ListBlockPalette(defaultBlock)
-    internal val blockStateCache: HashMap<String, BlockState> = hashMapOf()
 
     // Start and end in chunk grid space
     internal var chunkGridBound: IntBoundary = IntBoundary.new(ivec3(0, 0, 0), ivec3(0, 0, 0))
 
-    var loadedBound: IntBoundary = IntBoundary.new(ivec3(0, 0, 0), ivec3(0, 0, 0))
-    var wantedBound: IntBoundary = IntBoundary.new(ivec3(0, 0, 0), ivec3(0, 0, 0))
+    internal var loadedBound: IntBoundary = IntBoundary.new(ivec3(0, 0, 0), ivec3(0, 0, 0))
+    internal var wantedBound: IntBoundary = IntBoundary.new(ivec3(0, 0, 0), ivec3(0, 0, 0))
 
 
     companion object {
+
         fun new(
             loadedAreaMin: IVec3,
             loadedAreaMax: IVec3,
             defaultBlockStr: String = "minecraft:air"
         ): McVolume {
-            var vol = McVolume(BlockState.fromStr(defaultBlockStr))
+            var vol = McVolume(
+                chunks = Array(0) { null },
+                blockPalette = ListBlockPalette(BlockState.fromStr(defaultBlockStr)),
+                blockStateCache = hashMapOf(),
+            )
             vol.setLoadedArea(loadedAreaMin, loadedAreaMax)
 
             return vol
         }
+
     }
 
     fun getEnsuredPaletteBlock(blockState: BlockState): VolBlockState {

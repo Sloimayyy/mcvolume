@@ -48,19 +48,19 @@ fun McVolume.saveToRegions(regionFolderPath: String,
     var regionsToMake = hashMapOf<IVec3, MutableList<Pair<IVec3, Chunk>>>()
     for (chunkPos in buildChunkBounds.iterYzx()) {
         // If the chunk doesn't exist, don't iterate over it
-        val chunkIdx = this.chunkGridBound.posToYzxIdx(chunkPos);
+        val chunkIdx = this.chunkGridBound.posToYzxIdx(chunkPos)
         val chunk = this.chunks[chunkIdx] ?: continue
 
         // Get every regions this chunk is in (doesn't happen before a chunk is > 512 blocks in size
         // or if chunks aren't on a 2^n blocks grid but wtv lol)
-        val chunkBlockBounds = com.sloimay.mcvolume.IntBoundary.new(
-            chunkPos shl com.sloimay.mcvolume.CHUNK_BIT_SIZE,
-            (chunkPos+1) shl com.sloimay.mcvolume.CHUNK_BIT_SIZE
+        val chunkBlockBounds = IntBoundary.new(
+            chunkPos shl CHUNK_BIT_SIZE,
+            (chunkPos+1) shl CHUNK_BIT_SIZE
         )
         // Uses a 3d Boundary but only X and Z are used, Y dim is 1
-        val regionBounds = com.sloimay.mcvolume.IntBoundary.new(
-            (chunkBlockBounds.a shr com.sloimay.mcvolume.io.BLOCK_TO_REGION_SHIFT).withY(0),
-            (chunkBlockBounds.b shr com.sloimay.mcvolume.io.BLOCK_TO_REGION_SHIFT).withY(1),
+        val regionBounds = IntBoundary.new(
+            (chunkBlockBounds.a shr BLOCK_TO_REGION_SHIFT).withY(0),
+            (chunkBlockBounds.b shr BLOCK_TO_REGION_SHIFT).withY(1),
         )
 
         for (regionPos in regionBounds.iterYzx()) {
@@ -122,19 +122,19 @@ fun McVolume.saveToRegions(regionFolderPath: String,
         val regionBinary = MutableList<Byte>(4096 * 2) { 0 }
 
         // Get which col chunks to make
-        val regionBlockBounds = com.sloimay.mcvolume.IntBoundary.new(
-            IVec3.new(regionPos.x, 0, regionPos.z) shl com.sloimay.mcvolume.io.BLOCK_TO_REGION_SHIFT,
-            (IVec3.new(regionPos.x, 0, regionPos.z)+1) shl com.sloimay.mcvolume.io.BLOCK_TO_REGION_SHIFT,
+        val regionBlockBounds = IntBoundary.new(
+            IVec3.new(regionPos.x, 0, regionPos.z) shl BLOCK_TO_REGION_SHIFT,
+            (IVec3.new(regionPos.x, 0, regionPos.z)+1) shl BLOCK_TO_REGION_SHIFT,
         )
         val colChunksToMake = hashMapOf<IVec3, MutableList<Pair<IVec3, Chunk>>>()
         for ((chunkPos, chunk) in chunksInRegion) {
             // Get every column chunks that intersects this chunk
-            val chunkBlockBounds = com.sloimay.mcvolume.IntBoundary.new(
-                chunkPos shl com.sloimay.mcvolume.CHUNK_BIT_SIZE,
-                (chunkPos+1) shl com.sloimay.mcvolume.CHUNK_BIT_SIZE,
+            val chunkBlockBounds = IntBoundary.new(
+                chunkPos shl CHUNK_BIT_SIZE,
+                (chunkPos+1) shl CHUNK_BIT_SIZE,
             )
             val colChunksBlockBounds = chunkBlockBounds.getClampedInside(regionBlockBounds)
-            val colChunkBounds = com.sloimay.mcvolume.IntBoundary.new(
+            val colChunkBounds = IntBoundary.new(
                 (colChunksBlockBounds.a shr 4).withY(0),
                 (colChunksBlockBounds.b shr 4).withY(1),
             )
@@ -160,9 +160,9 @@ fun McVolume.saveToRegions(regionFolderPath: String,
             // you gotta add every section it crosses
             var sectionsToMake = hashMapOf<Int, MutableList<Pair<IVec3, Chunk>>>()
             for ((chunkPos, chunk) in chunksInCol) {
-                val chunkBlockBounds = com.sloimay.mcvolume.IntBoundary.new(
-                    chunkPos shl com.sloimay.mcvolume.CHUNK_BIT_SIZE,
-                    (chunkPos+1) shl com.sloimay.mcvolume.CHUNK_BIT_SIZE,
+                val chunkBlockBounds = IntBoundary.new(
+                    chunkPos shl CHUNK_BIT_SIZE,
+                    (chunkPos+1) shl CHUNK_BIT_SIZE,
                 )
                 val minSectionY = chunkBlockBounds.a.y shr 4
                 val maxSectionY = chunkBlockBounds.b.y shr 4
@@ -186,7 +186,7 @@ fun McVolume.saveToRegions(regionFolderPath: String,
                 var sectionPalette = ListTag(CompoundTag::class.java)
                 var runningMappedBId = 0.toShort()
 
-                var sectionBlockBounds = com.sloimay.mcvolume.IntBoundary.new(
+                var sectionBlockBounds = IntBoundary.new(
                     IVec3.new(colChunkPos.x, sectionY, colChunkPos.z) shl 4,
                     (IVec3.new(colChunkPos.x, sectionY, colChunkPos.z)+1) shl 4,
                 )
@@ -194,9 +194,9 @@ fun McVolume.saveToRegions(regionFolderPath: String,
                 // Populate the blocks in this section by iterating over every chunk
                 // that are intersecting it and placing the blocks in common
                 for ((chunkPos, chunk) in chunksInSection) {
-                    val chunkBlockBounds = com.sloimay.mcvolume.IntBoundary.new(
-                        chunkPos shl com.sloimay.mcvolume.CHUNK_BIT_SIZE,
-                        (chunkPos+1) shl com.sloimay.mcvolume.CHUNK_BIT_SIZE,
+                    val chunkBlockBounds = IntBoundary.new(
+                        chunkPos shl CHUNK_BIT_SIZE,
+                        (chunkPos+1) shl CHUNK_BIT_SIZE,
                     )
                     // Iterate over every block this chunk and this section have in common,
                     // and place the blocks
@@ -212,7 +212,7 @@ fun McVolume.saveToRegions(regionFolderPath: String,
                         // # Get the block id of the block we're currently going over and
                         // # convert it into this section's palette
                         val posInChunk = pos - chunkBlockBounds.a
-                        val blockIdx = com.sloimay.mcvolume.Chunk.localToBlockIdx(posInChunk)
+                        val blockIdx = Chunk.localToBlockIdx(posInChunk)
                         val blockId = chunk.blocks[blockIdx]
 
                         if (blockId == 1.toShort()) { oneCount += 1 }
@@ -255,7 +255,7 @@ fun McVolume.saveToRegions(regionFolderPath: String,
                 var sectionNbt = CompoundTag()
 
                 var biomesTag = CompoundTag()
-                var biomePaletteListTag = ListTag(StringTag::class.java);
+                var biomePaletteListTag = ListTag(StringTag::class.java)
                 biomePaletteListTag.add(StringTag("minecraft:plains"))
                 biomesTag.put("palette", biomePaletteListTag)
                 sectionNbt.put("biomes", biomesTag)
@@ -334,7 +334,7 @@ fun McVolume.saveToRegions(regionFolderPath: String,
         //println("region binary size: ${regionBinary.size}")
         regionFile.writeBytes(regionBinary.toByteArray())
 
-        println("Saved world region file ${regionFileName}");
+        println("Saved world region file ${regionFileName}")
     }
 
     println("Saved to regions in ${saveStart.elapsedNow()}")

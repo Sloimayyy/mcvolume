@@ -20,7 +20,7 @@ data class VolBlockState(internal val paletteId: BlockPaletteId, val state: Bloc
     }
 
     override fun toString(): String {
-        return "Block(${paletteId}, ${state})"
+        return "VolBlockState(${paletteId}, ${state})"
     }
 
 }

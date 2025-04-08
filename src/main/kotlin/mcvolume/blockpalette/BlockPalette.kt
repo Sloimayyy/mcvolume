@@ -4,7 +4,7 @@ import com.sloimay.mcvolume.block.BlockPaletteId
 import com.sloimay.mcvolume.block.BlockState
 import com.sloimay.mcvolume.block.VolBlockState
 
-abstract class BlockPalette {
+abstract sealed class BlockPalette {
 
     abstract val size: Int
 
@@ -17,5 +17,9 @@ abstract class BlockPalette {
     abstract fun getFromId(id: BlockPaletteId): VolBlockState
 
     abstract fun iter(): Iterator<VolBlockState>
+
+    // TODO: Make ser and deser much better
+    abstract fun populateFromDeserializedVbsArr(volBlockStates: List<VolBlockState>)
+    abstract fun serialize(): List<VolBlockState>
 
 }

@@ -1,9 +1,16 @@
 package com.sloimay.mcvolume
 
 import com.sloimay.smath.vectors.IVec3
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.util.zip.GZIPInputStream
+import java.util.zip.GZIPOutputStream
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.log2
+import kotlin.math.max
 
 internal const val INT_BIT_MASK = 0b0111_1111
 internal const val CONTINUE_BIT_MASK = 0b1000_0000
@@ -91,6 +98,9 @@ internal class McvUtils {
          * LF = Lower first. The longs are getting packed from the LSB to the MSB
          */
         fun makePackedLongArrLF(data: ShortArray, bitLength: Int): LongArray {
+            if (data.isEmpty()) return LongArray(0)
+            require(bitLength > 0) { "Bit length must be greater than 0 but got ${bitLength}." }
+
             var longs = mutableListOf<Long>()
             val bitMask = ((1 shl bitLength) - 1)
             val valuesPerLong = 64 / bitLength
@@ -110,6 +120,39 @@ internal class McvUtils {
             }
             return longs.toLongArray()
         }
+
+
+        fun unpackLongArrLFIntoShortArray(
+            longs: LongArray,
+            bitLength: Int,
+            valueCount: Int
+        ): ShortArray {
+            if (longs.isEmpty() || valueCount == 0) return ShortArray(0)
+
+            val outArr = ShortArray(valueCount)
+
+            val bitMask = ((1 shl bitLength) - 1).toLong()
+            var ptrInLong = 0
+            var currLongIdx = 0
+            var currLong = longs[currLongIdx]
+
+            for (valIdx in 0 until valueCount) {
+                val v = ( (currLong ushr ptrInLong) and bitMask ).toInt()
+                outArr[valIdx] = v.toShort()
+
+                ptrInLong += bitLength
+                // Ptr in long is now out of bounds
+                if (ptrInLong > (64 - bitLength)) {
+                    currLongIdx += 1
+                    if (currLongIdx < longs.size) currLong = longs[currLongIdx]
+                    ptrInLong = 0
+                }
+            }
+
+            return outArr
+        }
+
+
 
         fun byteVecToByteArray(byteVec: MutableList<Byte>): ByteArray {
             var byteArr = ByteArray(byteVec.size)
@@ -173,17 +216,94 @@ internal class McvUtils {
             buf.add(int.toByte())
         }
 
+        // TODO: Written by Claude so idk if it's that good lol
+        fun gzipCompress(data: ByteArray): ByteArray {
+            ByteArrayOutputStream().use { byteArrayOutputStream ->
+                GZIPOutputStream(byteArrayOutputStream).use { gzipOutputStream ->
+                    gzipOutputStream.write(data)
+                }
+                return byteArrayOutputStream.toByteArray()
+            }
+        }
+
+        // TODO: Written by Claude so idk if it's that good lol
+        fun gzipDecompress(compressedData: ByteArray): ByteArray {
+            ByteArrayInputStream(compressedData).use { byteArrayInputStream ->
+                GZIPInputStream(byteArrayInputStream).use { gzipInputStream ->
+                    ByteArrayOutputStream().use { byteArrayOutputStream ->
+                        val buffer = ByteArray(1024)
+                        var len: Int
+                        while (gzipInputStream.read(buffer).also { len = it } > 0) {
+                            byteArrayOutputStream.write(buffer, 0, len)
+                        }
+                        return byteArrayOutputStream.toByteArray()
+                    }
+                }
+            }
+        }
+
     }
 
 }
 
 
 
-/*fun Tag<*>.getInt() = (this as IntTag).asInt()
-fun Tag<*>.getFloat() = (this as FloatTag).asFloat()
-fun Tag<*>.getDouble() = (this as DoubleTag).asDouble()
-fun Tag<*>.getShort() = (this as ShortTag).asShort()
-fun Tag<*>.getByte() = (this as ByteTag).asByte()
-fun Tag<*>.getLong() = (this as LongTag).asLong()
-fun Tag<*>.getIntArray() = (this as IntArrayTag).value
-*/
+
+
+class GrowableByteBuf(initialCapacity: Int = 16, private val byteOrder: ByteOrder = ByteOrder.LITTLE_ENDIAN) {
+
+    private var buffer: ByteBuffer
+    private var size: Int = 0
+
+    init {
+        this.buffer = ByteBuffer.allocate(initialCapacity)
+        this.buffer.order(byteOrder)
+    }
+
+    private fun writeAndEnsureCap(neededBytes: Int) {
+        val currPos = buffer.position()
+        val endPos = currPos + neededBytes
+        size = max(size, endPos)
+        while (size > buffer.limit()) {
+            val pos = buffer.position()
+            val newBuffer = ByteBuffer.allocate(buffer.capacity() * 2)
+            newBuffer.order(byteOrder)
+            buffer.flip()
+            newBuffer.put(buffer)
+            buffer = newBuffer
+            buffer.position(pos)
+        }
+    }
+
+
+
+    fun seek(index: Int) {
+        buffer.position(index)
+    }
+
+    fun pos() = buffer.position()
+
+    fun size() = size
+
+    fun toByteArray(): ByteArray {
+        val bufArr = buffer.array()
+        val out = ByteArray(this.size) { bufArr[it] }
+        return out
+    }
+
+    fun getByte() = buffer.get()
+    fun getShort() = buffer.getShort()
+    fun getInt() = buffer.getInt()
+    fun getLong() = buffer.getLong()
+    fun getFloat() = buffer.getFloat()
+    fun getDouble() = buffer.getDouble()
+    fun getBytes(amount: Int) =  ByteArray(amount) { this.getByte() }
+
+    fun putByte(b: Byte) { writeAndEnsureCap(Byte.SIZE_BYTES); buffer.put(b) }
+    fun putShort(s: Short) { writeAndEnsureCap(Short.SIZE_BYTES); buffer.putShort(s)}
+    fun putInt(i: Int) { writeAndEnsureCap(Int.SIZE_BYTES); buffer.putInt(i) }
+    fun putFloat(f: Float) { writeAndEnsureCap(Float.SIZE_BYTES); buffer.putFloat(f) }
+    fun putDouble(d: Double) { writeAndEnsureCap(Double.SIZE_BYTES); buffer.putDouble(d) }
+    fun putLong(l: Long) { writeAndEnsureCap(Long.SIZE_BYTES); buffer.putLong(l) }
+    fun putBytes(b: ByteArray) { writeAndEnsureCap(b.size); buffer.put(b) }
+}

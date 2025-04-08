@@ -4,20 +4,20 @@ import com.sloimay.mcvolume.block.BlockPaletteId
 import com.sloimay.mcvolume.block.BlockState
 import com.sloimay.mcvolume.block.VolBlockState
 
-class HashedBlockPalette(defaultBlock: BlockState) : BlockPalette() {
+class HashedBlockPalette() : BlockPalette() {
 
-    private val listPalette = mutableListOf<VolBlockState>()
-    private val hashPalette = hashMapOf<BlockState, VolBlockState>()
+    internal var idToVolBlockState = mutableListOf<VolBlockState>()
+    internal var hashPalette = hashMapOf<BlockState, VolBlockState>()
 
     override val size
-        get() = listPalette.size
+        get() = idToVolBlockState.size
 
-    init {
+    internal constructor(defaultBlock: BlockState): this() {
         addBlock(defaultBlock)
     }
 
     override fun getDefaultBlock(): VolBlockState {
-        return this.listPalette[0]
+        return this.idToVolBlockState[0]
     }
 
     override fun getBlock(bs: BlockState): VolBlockState? {
@@ -31,18 +31,32 @@ class HashedBlockPalette(defaultBlock: BlockState) : BlockPalette() {
     }
 
     override fun getFromId(id: BlockPaletteId): VolBlockState {
-        return listPalette[id.toInt()]
+        return idToVolBlockState[id.toInt()]
     }
 
     override fun iter(): Iterator<VolBlockState> {
-        return listPalette.iterator()
+        return idToVolBlockState.iterator()
     }
 
 
+    override fun populateFromDeserializedVbsArr(volBlockStates: List<VolBlockState>) {
+        // Repopulate exactly the same way the serialized block palette would have been
+
+        // Reset
+        idToVolBlockState = mutableListOf()
+        hashPalette = hashMapOf()
+        // Populate
+        for (v in volBlockStates) addBlock(v.state)
+    }
+
+    override fun serialize(): List<VolBlockState> {
+        return idToVolBlockState
+    }
+
 
     private fun addBlock(bs: BlockState): VolBlockState {
-        val volBlockState = VolBlockState.new(listPalette.size.toShort(), bs)
-        listPalette.add(volBlockState)
+        val volBlockState = VolBlockState.new(idToVolBlockState.size.toShort(), bs)
+        idToVolBlockState.add(volBlockState)
         hashPalette[bs] = volBlockState
         return volBlockState
     }

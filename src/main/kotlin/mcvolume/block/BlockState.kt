@@ -1,11 +1,9 @@
 package com.sloimay.mcvolume.block
 
 import me.sloimay.me.sloimay.mcvolume.block.MutBlockState
-import java.util.*
 
 
-
-internal data class PropEntry(var k: String, var v: String)
+internal data class PropEntry(var name: String, var value: String)
 
 
 open class BlockState internal constructor(val resLoc: String,
@@ -21,16 +19,35 @@ open class BlockState internal constructor(val resLoc: String,
 
     val fullName = "$resLoc:$name"
     val hasProps = props.isNotEmpty()
-    val stateStr = computeStateStr()
+    open val stateStr = computeStateStr()
 
     companion object {
 
         fun new(resLoc: String, name: String, props: List<Pair<String, String>>): BlockState {
-            // List copy so it only becomes a view
+            // List copy so it only becomes a view. Check for duplicates
+            val propsSeen = mutableListOf<String>()
+            val propList = props.map {
+                if (it.first in propsSeen) {
+                    throw IllegalArgumentException(
+                        "Block state properties are unique, but found multiple instances of '${it.first}'."
+                    )
+                } else {
+                    propsSeen.add(it.first)
+                }
+                PropEntry(it.first, it.second)
+            }
+                // Sorting ensures BlockStates are equal even if their properties are
+                // not in the same order.
+                // Sorted a second time in computeStateStr() in case I want to define
+                // equality another way in the future. The impact on performance is
+                // minimal for reasonable block states with at most a few properties.
+                .sortedBy { it.name }
+                .toMutableList()
+
             return BlockState(
                 resLoc,
                 name,
-                props.map { PropEntry(it.first, it.second) }.toMutableList()
+                propList,
             )
         }
 
@@ -108,11 +125,13 @@ open class BlockState internal constructor(val resLoc: String,
         return MutBlockState(resLoc, name, props.toMutableList())
     }
 
-    private fun computeStateStr(): String {
+    protected fun computeStateStr(): String {
         val s = StringBuilder(this.fullName)
         if (this.hasProps) {
             s.append('[')
-            s.append(this.props.joinToString (separator = ",") { (prop, v) ->
+            // Sorting ensures this stateStr is equal to another equal BlockState
+            // regardless of the order of the properties
+            s.append(this.props.sortedBy { it.name }.joinToString (separator = ",") { (prop, v) ->
                 "${prop}=${v}"
             })
             s.append(']')
