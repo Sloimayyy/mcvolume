@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.github.sloimayyy"
-version = "1.0.6"
+version = "1.0.8"
 
 
 
@@ -20,11 +20,11 @@ repositories {
 }
 
 dependencies {
-    implementation(kotlin("stdlib"))
+    //implementation(kotlin("stdlib"))
     implementation("com.github.sloimayyy:smath:v1.0.4")
     implementation("com.github.Querz:NBT:6.1")
 
-    implementation("it.unimi.dsi:fastutil:8.5.12")
+    //implementation("it.unimi.dsi:fastutil:8.5.12")
 }
 
 

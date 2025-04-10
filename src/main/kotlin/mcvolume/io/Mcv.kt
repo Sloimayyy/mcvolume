@@ -17,7 +17,6 @@ import com.sloimay.mcvolume.blockpalette.BlockPalette
 import com.sloimay.mcvolume.blockpalette.HashedBlockPalette
 import com.sloimay.mcvolume.blockpalette.ListBlockPalette
 import com.sloimay.smath.vectors.IVec3
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
 import net.querz.mca.CompressionType
 import net.querz.nbt.io.NBTDeserializer
 import net.querz.nbt.io.NBTUtil
