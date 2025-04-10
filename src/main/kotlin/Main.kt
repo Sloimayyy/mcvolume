@@ -2,10 +2,13 @@ package com.sloimay
 
 import com.sloimay.smath.vectors.ivec3
 import com.sloimay.mcvolume.McVolume
-import com.sloimay.mcvolume.McvUtils.Companion.makePackedLongArrLF
-import com.sloimay.mcvolume.McvUtils.Companion.unpackLongArrLFIntoShortArray
+import com.sloimay.mcvolume.McVolumeUtils.Companion.deserializeNbtCompound
+import com.sloimay.mcvolume.McVolumeUtils.Companion.makePackedLongArrLF
+import com.sloimay.mcvolume.McVolumeUtils.Companion.serializeNbtCompound
+import com.sloimay.mcvolume.McVolumeUtils.Companion.unpackLongArrLFIntoShortArray
 import com.sloimay.mcvolume.block.BlockState
 import com.sloimay.smath.vectors.IVec3
+import net.querz.mca.CompressionType
 import net.querz.nbt.io.SNBTUtil
 import net.querz.nbt.tag.ByteTag
 import net.querz.nbt.tag.CompoundTag
@@ -28,7 +31,35 @@ import kotlin.time.TimeSource
 
 
 
+
+
+
+
+
+private fun tagSerializationTests() {
+    val tag = CompoundTag()
+    tag.putInt("hello", 2)
+
+    val nbtBytesIn = serializeNbtCompound(tag, "main", CompressionType.ZLIB)
+
+    val nbtBytesOut = deserializeNbtCompound(nbtBytesIn, CompressionType.ZLIB)
+
+    println(nbtBytesOut.tag as CompoundTag)
+
+
+}
+
+
+
+
+
+
 private fun longPackingTesting() {
+
+
+    //val a = IntBigArrays.newBigArray(10L)
+    //println(a)
+
 
     val rand = Random(35898)
 
@@ -103,7 +134,8 @@ private fun blockVersioningTest() {
     var i = 0
     //val volBlock = blocksToPlace[0]
     for (y in 0 until size) for (z in 0 until size) for (x in 0 until size) {
-        vol.setBlockStateStr(ivec3(x, y, z), blocksToPlace[i].state.stateStr)
+        //vol.setBlockStateStr(ivec3(x, y, z), blocksToPlace[i].state.stateStr)
+        vol.setVolBlockState(ivec3(x, y, z), blocksToPlace[i])
         i++
     }
     println(start.elapsedNow())
@@ -187,11 +219,11 @@ internal fun blockPaletteSpeedTesting() {
 
 internal fun main() {
 
+    //tagSerializationTests()
+    //longPackingTesting()
 
-    longPackingTesting()
 
-
-    //blockVersioningTest()
+    blockVersioningTest()
 
 
 

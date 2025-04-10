@@ -1,8 +1,12 @@
 package com.sloimay.mcvolume
 
 import com.sloimay.smath.vectors.IVec3
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
+import net.querz.mca.CompressionType
+import net.querz.nbt.io.NBTDeserializer
+import net.querz.nbt.io.NBTSerializer
+import net.querz.nbt.io.NamedTag
+import net.querz.nbt.tag.CompoundTag
+import java.io.*
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.zip.GZIPInputStream
@@ -15,7 +19,7 @@ import kotlin.math.max
 internal const val INT_BIT_MASK = 0b0111_1111
 internal const val CONTINUE_BIT_MASK = 0b1000_0000
 
-internal class McvUtils {
+internal class McVolumeUtils {
 
     companion object {
 
@@ -242,6 +246,41 @@ internal class McvUtils {
             }
         }
 
+        fun serializeNbtCompound(
+            nbtCompound: CompoundTag,
+            rootTagName: String,
+            compressionType: CompressionType,
+        ): ByteArray {
+            val baos = ByteArrayOutputStream(4096)
+            BufferedOutputStream(compressionType.compress(baos)).use { nbtOut ->
+                NBTSerializer(false)
+                    .toStream(
+                        NamedTag(rootTagName, nbtCompound),
+                        nbtOut
+                    )
+            }
+            return baos.toByteArray()
+        }
+
+
+
+        fun nbtDetectDecompression(inputStream: InputStream?): InputStream {
+            val pbis = PushbackInputStream(inputStream, 2)
+            val signature = (pbis.read() and 255) + (pbis.read() shl 8)
+            pbis.unread(signature shr 8)
+            pbis.unread(signature and 255)
+            return (if (signature == 35615) GZIPInputStream(pbis) else pbis)
+        }
+
+        fun deserializeNbtCompound(nbtBytes: ByteArray, compressionType: CompressionType): NamedTag {
+            var namedTag: NamedTag
+            ByteArrayInputStream(nbtBytes).use { fis ->
+                namedTag = (NBTDeserializer(false))
+                    .fromStream(BufferedInputStream(compressionType.decompress(fis))
+                )
+            }
+            return namedTag
+        }
     }
 
 }

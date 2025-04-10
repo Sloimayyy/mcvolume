@@ -1,20 +1,17 @@
 package com.sloimay.mcvolume.blockpalette
 
+import com.sloimay.mcvolume.McVolume
 import com.sloimay.mcvolume.block.BlockPaletteId
 import com.sloimay.mcvolume.block.BlockState
 import com.sloimay.mcvolume.block.VolBlockState
 
-class HashedBlockPalette() : BlockPalette() {
+class HashedBlockPalette : BlockPalette() {
 
     internal var idToVolBlockState = mutableListOf<VolBlockState>()
     internal var hashPalette = hashMapOf<BlockState, VolBlockState>()
 
     override val size
         get() = idToVolBlockState.size
-
-    internal constructor(defaultBlock: BlockState): this() {
-        addBlock(defaultBlock)
-    }
 
     override fun getDefaultBlock(): VolBlockState {
         return this.idToVolBlockState[0]
@@ -24,10 +21,10 @@ class HashedBlockPalette() : BlockPalette() {
         return hashPalette[bs]
     }
 
-    override fun getOrAddBlock(bs: BlockState): VolBlockState {
+    override fun getOrAddBlock(bs: BlockState, parentVolUuid: Long): VolBlockState {
         val b = hashPalette[bs]
         if (b != null) return b
-        return addBlock(bs)
+        return addBlock(bs, parentVolUuid)
     }
 
     override fun getFromId(id: BlockPaletteId): VolBlockState {
@@ -42,11 +39,20 @@ class HashedBlockPalette() : BlockPalette() {
     override fun populateFromDeserializedVbsArr(volBlockStates: List<VolBlockState>) {
         // Repopulate exactly the same way the serialized block palette would have been
 
-        // Reset
-        idToVolBlockState = mutableListOf()
+
+        /*val maxId = volBlockStates.maxOf { it.paletteId }
+        val idToVolBlockStateHashMap = HashMap<BlockPaletteId, VolBlockState>()
+        volBlockStates.forEach { idToVolBlockStateHashMap[it.paletteId] = it }*/
+
+        idToVolBlockState = volBlockStates.toMutableList()
         hashPalette = hashMapOf()
-        // Populate
-        for (v in volBlockStates) addBlock(v.state)
+        idToVolBlockState.forEach { hashPalette[it.state] = it }
+
+        //for (v in volBlockStates) addBlock(v.state, parentVol)
+    }
+
+    override fun fillParentVolUuid(parentVol: McVolume) {
+        idToVolBlockState.forEach { it.parentVolUuid = parentVol.uuid }
     }
 
     override fun serialize(): List<VolBlockState> {
@@ -54,8 +60,8 @@ class HashedBlockPalette() : BlockPalette() {
     }
 
 
-    private fun addBlock(bs: BlockState): VolBlockState {
-        val volBlockState = VolBlockState.new(idToVolBlockState.size.toShort(), bs)
+    private fun addBlock(bs: BlockState, parentVolUuid: Long): VolBlockState {
+        val volBlockState = VolBlockState.new(parentVolUuid, idToVolBlockState.size.toShort(), bs)
         idToVolBlockState.add(volBlockState)
         hashPalette[bs] = volBlockState
         return volBlockState

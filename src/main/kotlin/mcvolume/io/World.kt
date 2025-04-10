@@ -4,12 +4,13 @@ package com.sloimay.mcvolume.io
 
 
 import com.sloimay.mcvolume.*
-import com.sloimay.mcvolume.McvUtils
+import com.sloimay.mcvolume.McVolumeUtils
 import com.sloimay.smath.vectors.IVec3
 import com.sloimay.smath.vectors.ivec3
 import com.sloimay.mcvolume.block.BlockPaletteId
 import net.querz.mca.CompressionType
 import net.querz.nbt.io.NBTSerializer
+import net.querz.nbt.io.NBTUtil
 import net.querz.nbt.io.NamedTag
 import net.querz.nbt.tag.*
 import java.io.BufferedOutputStream
@@ -212,7 +213,7 @@ fun McVolume.saveToRegions(regionFolderPath: String,
                         // # Get the block id of the block we're currently going over and
                         // # convert it into this section's palette
                         val posInChunk = pos - chunkBlockBounds.a
-                        val blockIdx = Chunk.localToBlockIdx(posInChunk)
+                        val blockIdx = chunk.localToBlockIdx(posInChunk)
                         val blockId = chunk.blocks[blockIdx]
 
                         if (blockId == 1.toShort()) { oneCount += 1 }
@@ -247,8 +248,8 @@ fun McVolume.saveToRegions(regionFolderPath: String,
 
                 // The block data is full, so we build the block data thingy up
                 val maxSectionPaletteId = sectionPalette.size() - 1
-                val bitLength = max(McvUtils.getBitCount(maxSectionPaletteId), 4)
-                val longArray = McvUtils.makePackedLongArrLF(blocks, bitLength)
+                val bitLength = max(McVolumeUtils.getBitCount(maxSectionPaletteId), 4)
+                val longArray = McVolumeUtils.makePackedLongArrLF(blocks, bitLength)
                 val blockStateDataNbt = LongArrayTag(longArray)
 
                 // Make section NBT
@@ -297,7 +298,7 @@ fun McVolume.saveToRegions(regionFolderPath: String,
             //println("Col chunk nbt binary VVV")
             //println(colChunkNbtBinary.size)
             val colChunkBinary = mutableListOf<Byte>()
-            McvUtils.writeIntToByteListBE(colChunkBinary,colChunkNbtBinary.size + 1)
+            McVolumeUtils.writeIntToByteListBE(colChunkBinary,colChunkNbtBinary.size + 1)
             colChunkBinary.add(2) // Zlib compression
             for (b in colChunkNbtBinary) colChunkBinary.add(b)
 
@@ -311,7 +312,7 @@ fun McVolume.saveToRegions(regionFolderPath: String,
             var headerWritingIdx = headerOffset
             val headerEntryChunkBinaryOffset = (regionBinary.size / 4096)
             val headerEntryChunkBinaryLength = sectorCount.toByte()
-            for (byte in McvUtils.intToBEBytes(headerEntryChunkBinaryOffset).slice(1..3)) {
+            for (byte in McVolumeUtils.intToBEBytes(headerEntryChunkBinaryOffset).slice(1..3)) {
                 //println("Writing byte ${byte} for int: ${headerEntryChunkBinaryOffset}")
                 regionBinary[headerWritingIdx] = byte
                 headerWritingIdx += 1

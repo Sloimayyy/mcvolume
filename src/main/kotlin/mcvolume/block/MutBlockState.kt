@@ -1,7 +1,4 @@
-package me.sloimay.me.sloimay.mcvolume.block
-
-import com.sloimay.mcvolume.block.BlockState
-import com.sloimay.mcvolume.block.PropEntry
+package com.sloimay.mcvolume.block
 
 
 class MutBlockState internal constructor

@@ -4,20 +4,29 @@ import com.sloimay.mcvolume.Chunk
 import com.sloimay.mcvolume.GrowableByteBuf
 import com.sloimay.mcvolume.IntBoundary
 import com.sloimay.mcvolume.McVolume
-import com.sloimay.mcvolume.McvUtils.Companion.gzipCompress
-import com.sloimay.mcvolume.McvUtils.Companion.gzipDecompress
-import com.sloimay.mcvolume.McvUtils.Companion.makePackedLongArrLF
-import com.sloimay.mcvolume.McvUtils.Companion.unpackLongArrLFIntoShortArray
+import com.sloimay.mcvolume.McVolumeUtils.Companion.deserializeNbtCompound
+import com.sloimay.mcvolume.McVolumeUtils.Companion.gzipCompress
+import com.sloimay.mcvolume.McVolumeUtils.Companion.gzipDecompress
+import com.sloimay.mcvolume.McVolumeUtils.Companion.makePackedLongArrLF
+import com.sloimay.mcvolume.McVolumeUtils.Companion.nbtDetectDecompression
+import com.sloimay.mcvolume.McVolumeUtils.Companion.serializeNbtCompound
+import com.sloimay.mcvolume.McVolumeUtils.Companion.unpackLongArrLFIntoShortArray
 import com.sloimay.mcvolume.block.BlockState
 import com.sloimay.mcvolume.block.VolBlockState
 import com.sloimay.mcvolume.blockpalette.BlockPalette
 import com.sloimay.mcvolume.blockpalette.HashedBlockPalette
 import com.sloimay.mcvolume.blockpalette.ListBlockPalette
 import com.sloimay.smath.vectors.IVec3
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
+import net.querz.mca.CompressionType
+import net.querz.nbt.io.NBTDeserializer
+import net.querz.nbt.io.NBTUtil
+import net.querz.nbt.io.NamedTag
+import net.querz.nbt.tag.CompoundTag
 import java.io.File
+import java.io.FileInputStream
 import java.nio.ByteOrder
 import java.nio.charset.Charset
-import kotlin.math.min
 import kotlin.time.TimeSource
 
 /**
@@ -60,6 +69,7 @@ import kotlin.time.TimeSource
  * McvFile (gzipped file):
  *  miscData: MiscData
  *  blockPalette: BlockPalette
+ *  chunkBitSize: Byte,
  *  chunkFileLocs: Array<Int>  // points to the start byte of the chunk data
  *  chunks: [Chunk]   // array without a length
  *
@@ -96,6 +106,7 @@ private val BYTE_ORDER = ByteOrder.LITTLE_ENDIAN
  * McvFile:
  *  miscData: MiscData
  *  blockPalette: BlockPalette
+ *  chunkBitSize: Byte,
  *  chunkFileLocs: Array<Int>  // points to the start byte of the chunk data
  *  chunks: [Chunk]
  */
@@ -126,8 +137,12 @@ fun McVolume.exportToMcv(filePath: String) {
     // Block palette
     byteBuf.putBlockPalette(blockPalette)
 
+    // # Chunk bit size
+    byteBuf.putByte(CHUNK_BIT_SIZE.toByte())
+
 
     // # Chunks
+    val chunkStartTime = ts.markNow()
     val chunkCount = chunks.count { it != null }
     val chunkArrStartByteIdx = byteBuf.size()
     byteBuf.putIntArr(IntArray(chunkCount))
@@ -148,6 +163,8 @@ fun McVolume.exportToMcv(filePath: String) {
 
         fileChunkIdx += 1
     }
+
+    println("Serialized chunks in ${chunkStartTime.elapsedNow()}")
 
     // Write file
     val fileBytes = byteBuf.toByteArray()
@@ -189,6 +206,12 @@ fun McVolume.Companion.fromMcv(filePath: String): McVolume {
 
     // # Block Palette
     val blockPalette = byteBuf.getBlockPalette()
+    if (blockPalette !is HashedBlockPalette) {
+        error("ListBlockPalettes aren't supported by this version of McVolume.")
+    }
+
+    // # Chunk bit size
+    val chunkBitSize = byteBuf.getByte().toInt()
 
     // # ChunkFileLocs
     val chunkFileLocs = byteBuf.getIntArr()
@@ -202,7 +225,8 @@ fun McVolume.Companion.fromMcv(filePath: String): McVolume {
     val vol = McVolume(
         chunks,
         blockPalette,
-        blockStateCache = hashMapOf(),
+        blockStateCache = HashMap(),
+        CHUNK_BIT_SIZE = chunkBitSize
     )
     vol.chunkGridBound = mcvMiscData.chunkGridBound
     vol.loadedBound = mcvMiscData.loadedBound
@@ -211,15 +235,20 @@ fun McVolume.Companion.fromMcv(filePath: String): McVolume {
     // Populate chunks
     for (chunkFileLoc in chunkFileLocs) {
         byteBuf.seek(chunkFileLoc)
-        val (chunkPos, chunk) = byteBuf.getMcvChunk()
+        val (chunkPos, chunk) = byteBuf.getMcvChunk(vol)
         val chunkIdx = vol.chunkGridBound.posToYzxIdx(chunkPos)
         chunks[chunkIdx] = chunk
     }
+
+    // # Finish block palette init
+    vol.blockPalette.fillParentVolUuid(vol)
 
     println("Volume initialized from Mcv file in ${deserStart.elapsedNow()}.")
 
     return vol
 }
+
+
 
 
 
@@ -250,6 +279,14 @@ private fun McVolume.mcvRemapChunkBlockIds(chunk: Chunk): Pair<ShortArray, Short
 
 
 /**
+ *
+ * NbtCompound:
+ *  ZLib zipped NbtCompound bytes
+ *
+ * TileData:
+ *  Array<(IVec3, NbtCompound)>
+ *
+ *
  * Chunk:
  *  pos: IVec3
  *  localPaletteToGlobalPalette: Array<Short>
@@ -257,6 +294,7 @@ private fun McVolume.mcvRemapChunkBlockIds(chunk: Chunk): Pair<ShortArray, Short
  *      valueCount: Int,
  *      bitLength: Byte,
  *      shortPackedLongArr: Array<Long>
+ *  tileData: TileData
  */
 private fun GrowableByteBuf.putMcvChunk(vol: McVolume, chunkPos: IVec3, chunk: Chunk) {
     val (localToGlobalMap, remappedBlocks) = vol.mcvRemapChunkBlockIds(chunk)
@@ -268,9 +306,11 @@ private fun GrowableByteBuf.putMcvChunk(vol: McVolume, chunkPos: IVec3, chunk: C
     putShortArr(localToGlobalMap)
     val shortPackedLongArr = ShortPackedLongArr(packedRemappedBlock, maxBitLen, remappedBlocks.size)
     putShortPackedLongArr(shortPackedLongArr)
+
+    putTileData(chunk.tileData)
 }
 
-private fun GrowableByteBuf.getMcvChunk(): Pair<IVec3, Chunk> {
+private fun GrowableByteBuf.getMcvChunk(parentVol: McVolume): Pair<IVec3, Chunk> {
     //println("deserializing mcv chunk")
     val chunkPos = getIVec3()
     val localToGlobalMap = getShortArr()
@@ -281,19 +321,42 @@ private fun GrowableByteBuf.getMcvChunk(): Pair<IVec3, Chunk> {
         shortPackedLongArr.bitLength,
         shortPackedLongArr.valueCount
     )
-    //println("local to global map: ${localToGlobalMap.toList()}")
-    //println("remapped blocks: ${remappedBlocks.toList().filter {it != 0.toShort()}}")
+
     val originalBlocks = ShortArray(remappedBlocks.size) { localToGlobalMap[remappedBlocks[it].toInt()] }
+
+    val tileData = getTileData()
 
     return Pair(
         chunkPos,
         Chunk(
+            parentVol.CHUNK_BIT_SIZE,
             originalBlocks,
-            hashMapOf(),
+            tileData,
         )
     )
 }
 
+
+private fun GrowableByteBuf.putTileData(tileData: HashMap<IVec3, CompoundTag>) {
+    putInt(tileData.size)
+    for ((k, v) in tileData) {
+        putIVec3(k)
+        val nbtBytes = serializeNbtCompound(v, "main", CompressionType.ZLIB)
+        putByteArr(nbtBytes)
+    }
+}
+
+private fun GrowableByteBuf.getTileData(): HashMap<IVec3, CompoundTag> {
+    val outMap = HashMap<IVec3, CompoundTag>()
+    val size = getInt()
+    for (i in 0 until size) {
+        val pos = getIVec3()
+        val nbtBytes = getByteArr()
+        val namedTag = deserializeNbtCompound(nbtBytes, CompressionType.ZLIB)
+        outMap[pos] = namedTag.tag as CompoundTag
+    }
+    return outMap
+}
 
 
 private fun GrowableByteBuf.putBlockPalette(blockPalette: BlockPalette) {
@@ -326,10 +389,6 @@ private fun GrowableByteBuf.getBlockPalette(): BlockPalette {
 
 private fun GrowableByteBuf.putVolBlockStateArray(arr: List<VolBlockState>) {
     putInt(arr.size)
-    //seek(pos() - 4)
-    //println("got ${getInt()}")
-    //return
-    //println("put vol block state array of size ${arr.size}")
     for (v in arr) putVolBlockState(v)
 }
 
@@ -350,6 +409,7 @@ private fun GrowableByteBuf.putVolBlockState(volBlockState: VolBlockState) {
 
 private fun GrowableByteBuf.getVolBlockState(): VolBlockState {
     return VolBlockState(
+        -1L, // Un-init vol uuid
         getShort(),
         BlockState.fromStr(getString())
     )
@@ -429,6 +489,15 @@ private fun GrowableByteBuf.putShortArr(arr: ShortArray) {
 private fun GrowableByteBuf.getShortArr(): ShortArray {
     val size = getInt()
     return ShortArray(size) { getShort() }
+}
+
+private fun GrowableByteBuf.putByteArr(arr: ByteArray) {
+    putInt(arr.size)
+    for (e in arr) putByte(e)
+}
+private fun GrowableByteBuf.getByteArr(): ByteArray {
+    val size = getInt()
+    return ByteArray(size) { getByte() }
 }
 
 private fun GrowableByteBuf.putIntArr(arr: IntArray) {

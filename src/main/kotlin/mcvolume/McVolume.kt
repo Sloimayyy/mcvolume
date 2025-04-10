@@ -10,14 +10,29 @@ import com.sloimay.mcvolume.blockpalette.HashedBlockPalette
 import com.sloimay.mcvolume.blockpalette.ListBlockPalette
 import net.querz.nbt.tag.CompoundTag
 import java.util.*
+import java.util.concurrent.atomic.AtomicLong
+
+
+private val rollingUuid = AtomicLong(0)
+private fun getNewUuid() = rollingUuid.getAndAdd(1)
+
+
+
 
 /**
  * Non thread safe
  */
 class McVolume internal constructor(
     internal var chunks: Array<Chunk?>,
-    internal var blockPalette: BlockPalette,
+
+    // INVARIANT: VolBlockStates in the block palette are always up-to-date with the
+    //            version of this McVolume.
+    internal var blockPalette: HashedBlockPalette,
+
     internal val blockStateCache: HashMap<String, BlockState>,
+    //internal val blockStateCache: Object2ObjectOpenHashMap<String, BlockState>,
+
+    internal val CHUNK_BIT_SIZE: Int,
 ) {
 
     // Start and end in chunk grid space
@@ -26,20 +41,44 @@ class McVolume internal constructor(
     internal var loadedBound: IntBoundary = IntBoundary.new(ivec3(0, 0, 0), ivec3(0, 0, 0))
     internal var wantedBound: IntBoundary = IntBoundary.new(ivec3(0, 0, 0), ivec3(0, 0, 0))
 
+    // # VolBlockState safety
+    internal val uuid: Long = getNewUuid()
+
+    /**
+     * Not related to Minecraft versions. (McVolume is version agnostic)
+     * If, from the outside, you get a VolBlockState object from the palette,
+     * then "clean" this volume (like getting rid of unnecessary palette entries),
+     * if the VolBlockState object you got is not in the palette anymore then its
+     * cached ID is wrong.
+     */
+    //internal val volumeVersion: Int = 0
+
+    // Derived constants
+    internal val CHUNK_SIDE_LEN = 1 shl CHUNK_BIT_SIZE
+    internal val CHUNK_SIZE_BIT_MASK = CHUNK_SIDE_LEN - 1
+    internal val CHUNK_BLOCK_COUNT = CHUNK_SIDE_LEN * CHUNK_SIDE_LEN * CHUNK_SIDE_LEN
+
+
 
     companion object {
 
         fun new(
             loadedAreaMin: IVec3,
             loadedAreaMax: IVec3,
-            defaultBlockStr: String = "minecraft:air"
+            defaultBlockStr: String = "minecraft:air",
+            chunkBitSize: Int = 5,
         ): McVolume {
+            require(chunkBitSize in 1..8) {
+                "Chunk bit size can only be between 1 and 8, but got ${chunkBitSize}."
+            }
             var vol = McVolume(
                 chunks = Array(0) { null },
-                blockPalette = ListBlockPalette(BlockState.fromStr(defaultBlockStr)),
-                blockStateCache = hashMapOf(),
+                blockPalette = HashedBlockPalette(),
+                blockStateCache = HashMap(),
+                CHUNK_BIT_SIZE = chunkBitSize,
             )
             vol.setLoadedArea(loadedAreaMin, loadedAreaMax)
+            vol.blockPalette.getOrAddBlock(BlockState.fromStr(defaultBlockStr), vol.uuid)
 
             return vol
         }
@@ -47,18 +86,21 @@ class McVolume internal constructor(
     }
 
     fun getEnsuredPaletteBlock(blockState: BlockState): VolBlockState {
+        /*
+        // Actually we're gonna use a hashed block palette the entire way through for now lol
+
         // If the palette gets big enough, replace it by a hashmap block palette instead
         if (this.blockPalette.size > 5 && blockPalette is ListBlockPalette) {
-            val newPalette = HashedBlockPalette(this.blockPalette.getDefaultBlock().state)
+            val newPalette = HashedBlockPalette(this.blockPalette.getDefaultBlock().state, this)
             // MAKE SURE!! that blocks in the palette map to the same id when handing over
             // Feels like this is gonna bite me in the ahh later down the line lmao
             for (b in this.blockPalette.iter()) {
                 newPalette.getOrAddBlock(b.state)
             }
             this.blockPalette = newPalette
-        }
+        }*/
 
-        return this.blockPalette.getOrAddBlock(blockState)
+        return this.blockPalette.getOrAddBlock(blockState, this.uuid)
     }
 
     fun getEnsuredPaletteBlock(blockStateStr: String): VolBlockState {
@@ -91,13 +133,14 @@ class McVolume internal constructor(
     }
 
     fun setVolBlockState(pos: IVec3, volBlockState: VolBlockState) {
-        if (!loadedBound.posInside(pos)) { throw Error("Pos not in loaded area") }
+        if (!loadedBound.posInside(pos)) { error("Pos not in loaded area") }
+        if (volBlockState.parentVolUuid != this.uuid) { error("Trying to place an unregistered block.") }
 
         val chunkIdx = chunkGridBound.posToYzxIdx(posToChunkPos(pos))
         var chunk = chunks[chunkIdx]
         if (chunk == null) {
             if (volBlockState.paletteId != DEFAULT_BLOCK_ID) {
-                val newChunk = Chunk.new()
+                val newChunk = Chunk.new(CHUNK_BIT_SIZE)
                 chunks[chunkIdx] = newChunk
                 val localBlockCoords = posToChunkLocalCoords(pos)
                 newChunk.setBlock(localBlockCoords, volBlockState)
@@ -119,7 +162,7 @@ class McVolume internal constructor(
         var chunk = chunks[chunkIdx]
         if (chunk == null) {
             if (tileData != null) {
-                val newChunk = Chunk.new()
+                val newChunk = Chunk.new(CHUNK_BIT_SIZE)
                 chunks[chunkIdx] = newChunk
                 val localBlockCoords = posToChunkLocalCoords(pos)
                 newChunk.setTileData(localBlockCoords, tileData)

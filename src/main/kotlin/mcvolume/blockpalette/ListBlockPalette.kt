@@ -1,19 +1,16 @@
 package com.sloimay.mcvolume.blockpalette
 
+import com.sloimay.mcvolume.McVolume
 import com.sloimay.mcvolume.block.BlockPaletteId
 import com.sloimay.mcvolume.block.BlockState
 import com.sloimay.mcvolume.block.VolBlockState
 
-class ListBlockPalette() : BlockPalette() {
+class ListBlockPalette : BlockPalette() {
 
     internal var palette = mutableListOf<VolBlockState>()
 
     override val size
         get() = this.palette.size
-
-    internal constructor(defaultBlock: BlockState) : this() {
-        addBlock(defaultBlock)
-    }
 
     override fun getBlock(bs: BlockState): VolBlockState? {
         val id = idOf(bs)
@@ -27,8 +24,8 @@ class ListBlockPalette() : BlockPalette() {
         return palette.indexOfFirst { bs == it.state }
     }
 
-    private fun addBlock(bs: BlockState): VolBlockState {
-        val volBlockState = VolBlockState.new(palette.size.toShort(), bs)
+    private fun addBlock(bs: BlockState, parentVolUuid: Long): VolBlockState {
+        val volBlockState = VolBlockState.new(parentVolUuid, palette.size.toShort(), bs)
         palette.add(volBlockState)
         return volBlockState
     }
@@ -38,10 +35,10 @@ class ListBlockPalette() : BlockPalette() {
         return this.palette[0]
     }
 
-    override fun getOrAddBlock(bs: BlockState): VolBlockState {
+    override fun getOrAddBlock(bs: BlockState, parentVolUuid: Long): VolBlockState {
         val id = idOf(bs)
         if (id == -1) {
-            return addBlock(bs)
+            return addBlock(bs, parentVolUuid)
         } else {
             return palette[id]
         }
@@ -53,6 +50,10 @@ class ListBlockPalette() : BlockPalette() {
 
     override fun iter(): Iterator<VolBlockState> {
         return this.palette.iterator()
+    }
+
+    override fun fillParentVolUuid(parentVol: McVolume) {
+        palette.forEach { it.parentVolUuid = parentVol.uuid }
     }
 
 

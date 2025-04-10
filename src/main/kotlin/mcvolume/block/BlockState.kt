@@ -1,7 +1,5 @@
 package com.sloimay.mcvolume.block
 
-import me.sloimay.me.sloimay.mcvolume.block.MutBlockState
-
 
 internal data class PropEntry(var name: String, var value: String)
 

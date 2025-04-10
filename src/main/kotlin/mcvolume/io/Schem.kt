@@ -3,7 +3,7 @@ package com.sloimay.mcvolume.io
 
 import com.sloimay.smath.vectors.IVec3
 import com.sloimay.smath.vectors.ivec3
-import com.sloimay.mcvolume.McvUtils.Companion.readVarint
+import com.sloimay.mcvolume.McVolumeUtils.Companion.readVarint
 import com.sloimay.mcvolume.block.VolBlockState
 import com.sloimay.mcvolume.McVolume
 import net.querz.nbt.io.NBTUtil
