@@ -13,3 +13,6 @@ dependencies {
     implementation("com.github.Querz:NBT:<querz nbt version>")
 }
 ```
+
+**Currently under heavy development, methods will be renamed or their implementations may change from versions to versions.
+There is no documentation yet.**
