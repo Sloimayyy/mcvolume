@@ -78,7 +78,8 @@ class McVolume internal constructor(
                 CHUNK_BIT_SIZE = chunkBitSize,
             )
             vol.setLoadedArea(loadedAreaMin, loadedAreaMax)
-            vol.blockPalette.getOrAddBlock(BlockState.fromStr(defaultBlockStr), vol.uuid)
+            vol.blockPalette.link(vol)
+            vol.blockPalette.getOrAddBlock(BlockState.fromStr(defaultBlockStr))
 
             return vol
         }
@@ -100,7 +101,7 @@ class McVolume internal constructor(
             this.blockPalette = newPalette
         }*/
 
-        return this.blockPalette.getOrAddBlock(blockState, this.uuid)
+        return this.blockPalette.getOrAddBlock(blockState)
     }
 
     fun getEnsuredPaletteBlock(blockStateStr: String): VolBlockState {

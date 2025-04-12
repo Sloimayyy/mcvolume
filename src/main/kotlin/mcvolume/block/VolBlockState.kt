@@ -1,7 +1,5 @@
 package com.sloimay.mcvolume.block
 
-import com.sloimay.mcvolume.McVolume
-
 typealias BlockPaletteId = Short
 
 const val DEFAULT_BLOCK_ID = 0.toShort()
@@ -24,7 +22,7 @@ data class VolBlockState(
             return VolBlockState(parentVolUuid, paletteId, state)
         }
 
-        fun newLinkless(paletteId: BlockPaletteId, state: BlockState): VolBlockState {
+        fun newUnlinked(paletteId: BlockPaletteId, state: BlockState): VolBlockState {
             return new(NO_PARENT_DEFINED_UUID, paletteId, state)
         }
     }

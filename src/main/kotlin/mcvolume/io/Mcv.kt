@@ -10,8 +10,8 @@ import com.sloimay.mcvolume.McVolumeUtils.Companion.gzipDecompress
 import com.sloimay.mcvolume.McVolumeUtils.Companion.makePackedLongArrLF
 import com.sloimay.mcvolume.McVolumeUtils.Companion.serializeNbtCompound
 import com.sloimay.mcvolume.McVolumeUtils.Companion.unpackLongArrLFIntoShortArray
+import com.sloimay.mcvolume.block.BlockPaletteId
 import com.sloimay.mcvolume.block.BlockState
-import com.sloimay.mcvolume.block.VolBlockState
 import com.sloimay.mcvolume.blockpalette.BlockPalette
 import com.sloimay.mcvolume.blockpalette.HashedBlockPalette
 import com.sloimay.mcvolume.blockpalette.ListBlockPalette
@@ -201,7 +201,7 @@ fun McVolume.Companion.fromMcv(filePath: String): McVolume {
     // # Block Palette
     val blockPalette = byteBuf.getBlockPalette()
     if (blockPalette !is HashedBlockPalette) {
-        error("ListBlockPalettes aren't supported by this version of McVolume.")
+        error("Other block palettes than HashedBlockPalettes aren't supported by this version of McVolume.")
     }
 
     // # Chunk bit size
@@ -234,8 +234,8 @@ fun McVolume.Companion.fromMcv(filePath: String): McVolume {
         chunks[chunkIdx] = chunk
     }
 
-    // # Finish block palette init
-    vol.blockPalette.iter().forEach { it.parentVolUuid = vol.uuid }
+    // # Link the block palette
+    vol.blockPalette.link(vol)
 
     println("Volume initialized from Mcv file in ${deserStart.elapsedNow()}.")
 
@@ -354,7 +354,7 @@ private fun GrowableByteBuf.getTileData(): HashMap<IVec3, CompoundTag> {
 
 
 private fun GrowableByteBuf.putBlockPalette(blockPalette: BlockPalette) {
-    val idToVolBlockState = blockPalette.serialize()
+    val blockStateMappings = blockPalette.toUnlinkedBlockStateMappings()
 
     val paletteTypeId = when (blockPalette) {
         is ListBlockPalette -> 0.toByte()
@@ -364,48 +364,49 @@ private fun GrowableByteBuf.putBlockPalette(blockPalette: BlockPalette) {
     //println("size before ${size()}")
     putByte(paletteTypeId)
     //println("size after ${size()}")
-    putVolBlockStateArray(idToVolBlockState)
+    putBlockStateMappings(blockStateMappings)
 }
 
 private fun GrowableByteBuf.getBlockPalette(): BlockPalette {
     val paletteTypeId = getByte()
-    val volBlockStates = getVolBlockStateArray()
+    val mappings = getBlockStateMappings()
 
     val blockPalette = when (paletteTypeId) {
         0.toByte() -> ListBlockPalette()
         1.toByte() -> HashedBlockPalette()
         else -> error("Unsupported palette type id '${paletteTypeId}'.")
     }
-    blockPalette.populateFromDeserializedVbsArr(volBlockStates)
+    blockPalette.populateFromUnlinkedMappings(mappings)
 
     return blockPalette
 }
 
-private fun GrowableByteBuf.putVolBlockStateArray(arr: List<VolBlockState>) {
+private fun GrowableByteBuf.putBlockStateMappings(arr: HashMap<BlockPaletteId, BlockState>) {
     putInt(arr.size)
-    for (v in arr) putVolBlockStateWithoutLink(v)
+    for (v in arr) putMappedBlockState(Pair(v.key, v.value))
 }
 
-private fun GrowableByteBuf.getVolBlockStateArray(): List<VolBlockState> {
+private fun GrowableByteBuf.getBlockStateMappings(): HashMap<BlockPaletteId, BlockState> {
     val size = getInt()
     //println("getting vol block state array of size ${size}")
-    return List(size) { getLinklessVolBlockState() }
-}
-
-
-
-
-
-private fun GrowableByteBuf.putVolBlockStateWithoutLink(volBlockState: VolBlockState) {
-    putShort(volBlockState.paletteId)
-    putString(volBlockState.state.stateStr)
-}
-
-private fun GrowableByteBuf.getLinklessVolBlockState(): VolBlockState {
-    return VolBlockState.newLinkless(
-        getShort(),
-        BlockState.fromStr(getString())
+    val mappings = hashMapOf<BlockPaletteId, BlockState>()
+    mappings.putAll (
+        (0 until size).map { getMappedBlockState() }
     )
+    return mappings
+}
+
+
+
+
+
+private fun GrowableByteBuf.putMappedBlockState(v: Pair<BlockPaletteId, BlockState>) {
+    putShort(v.first)
+    putString(v.second.stateStr)
+}
+
+private fun GrowableByteBuf.getMappedBlockState(): Pair<BlockPaletteId, BlockState> {
+    return Pair(getShort(), BlockState.fromStr(getString()))
 }
 
 

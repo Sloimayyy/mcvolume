@@ -11,7 +11,7 @@ abstract sealed class BlockPalette {
 
     abstract fun getDefaultBlock(): VolBlockState
 
-    abstract fun getOrAddBlock(bs: BlockState, parentVolUuid: Long): VolBlockState
+    abstract fun getOrAddBlock(bs: BlockState): VolBlockState
 
     abstract fun getBlock(bs: BlockState): VolBlockState?
 
@@ -19,8 +19,12 @@ abstract sealed class BlockPalette {
 
     abstract fun iter(): Iterator<VolBlockState>
 
-    // TODO: Make ser and deser much better
-    abstract fun populateFromDeserializedVbsArr(volBlockStates: List<VolBlockState>)
-    abstract fun serialize(): List<VolBlockState>
+    abstract fun populateFromUnlinkedMappings(mappings: HashMap<BlockPaletteId, BlockState>)
+    abstract fun toUnlinkedBlockStateMappings(): HashMap<BlockPaletteId, BlockState>
+
+    /**
+     * The idea of a link is that a block palette is unusable as long as its not linked
+     */
+    abstract fun link(volume: McVolume)
 
 }
