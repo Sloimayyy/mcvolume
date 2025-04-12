@@ -37,6 +37,7 @@ import kotlin.time.TimeSource
 
 
 private fun tagSerializationTests() {
+
     val tag = CompoundTag()
     tag.putInt("hello", 2)
 

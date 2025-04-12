@@ -51,10 +51,6 @@ class HashedBlockPalette : BlockPalette() {
         //for (v in volBlockStates) addBlock(v.state, parentVol)
     }
 
-    override fun fillParentVolUuid(parentVol: McVolume) {
-        idToVolBlockState.forEach { it.parentVolUuid = parentVol.uuid }
-    }
-
     override fun serialize(): List<VolBlockState> {
         return idToVolBlockState
     }

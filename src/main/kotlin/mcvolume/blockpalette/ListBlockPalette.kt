@@ -52,10 +52,6 @@ class ListBlockPalette : BlockPalette() {
         return this.palette.iterator()
     }
 
-    override fun fillParentVolUuid(parentVol: McVolume) {
-        palette.forEach { it.parentVolUuid = parentVol.uuid }
-    }
-
 
     override fun populateFromDeserializedVbsArr(volBlockStates: List<VolBlockState>) {
         palette = volBlockStates.toMutableList()

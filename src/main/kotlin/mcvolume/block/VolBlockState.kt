@@ -6,6 +6,8 @@ typealias BlockPaletteId = Short
 
 const val DEFAULT_BLOCK_ID = 0.toShort()
 
+const val NO_PARENT_DEFINED_UUID: Long = -1
+
 /**
  * Cached block state for volumes
  */
@@ -20,6 +22,10 @@ data class VolBlockState(
     companion object {
         fun new(parentVolUuid: Long, paletteId: BlockPaletteId, state: BlockState): VolBlockState {
             return VolBlockState(parentVolUuid, paletteId, state)
+        }
+
+        fun newLinkless(paletteId: BlockPaletteId, state: BlockState): VolBlockState {
+            return new(NO_PARENT_DEFINED_UUID, paletteId, state)
         }
     }
 

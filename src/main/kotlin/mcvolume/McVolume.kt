@@ -222,7 +222,7 @@ class McVolume internal constructor(
             posToChunkPos(newBoundary.a),
             posToChunkPos(newBoundary.b + (CHUNK_SIDE_LEN - 1))
         )
-        val newChunkCount = newChunkGridBound.dim.elementProduct()
+        val newChunkCount = newChunkGridBound.dim.eProd()
         val newChunks: Array<Chunk?> = Array(newChunkCount) { null }
         val newWantedBound = newBoundary
         val newLoadedBound =

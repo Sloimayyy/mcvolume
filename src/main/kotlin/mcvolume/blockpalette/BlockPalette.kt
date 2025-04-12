@@ -19,8 +19,6 @@ abstract sealed class BlockPalette {
 
     abstract fun iter(): Iterator<VolBlockState>
 
-    abstract fun fillParentVolUuid(parentVol: McVolume)
-
     // TODO: Make ser and deser much better
     abstract fun populateFromDeserializedVbsArr(volBlockStates: List<VolBlockState>)
     abstract fun serialize(): List<VolBlockState>

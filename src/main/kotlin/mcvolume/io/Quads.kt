@@ -166,7 +166,7 @@ fun McVolume.exportToSQuads(filePath: String,
 
     // # Set up threads and dispatch
     val buildChunksGridDim = buildChunksBound.dim
-    val longestAxisIdx = buildChunksGridDim.longestAxis()
+    val longestAxisIdx = buildChunksGridDim.eMax()
     val jobs = McVolumeUtils.distributeRange(
         buildChunksBound.a[longestAxisIdx],
         buildChunksBound.b[longestAxisIdx],
@@ -198,8 +198,8 @@ fun McVolume.exportToSQuads(filePath: String,
 
     val jobsBounds = jobs.map {
         IntBoundary.new(
-            buildChunksBound.a.withAxis(longestAxisIdx, it.first),
-            buildChunksBound.b.withAxis(longestAxisIdx, it.second),
+            buildChunksBound.a.withElement(longestAxisIdx, it.first),
+            buildChunksBound.b.withElement(longestAxisIdx, it.second),
         )
     }
     val threads = List(jobsBounds.size) { threadIdx ->

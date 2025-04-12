@@ -8,7 +8,6 @@ import com.sloimay.mcvolume.McVolumeUtils.Companion.deserializeNbtCompound
 import com.sloimay.mcvolume.McVolumeUtils.Companion.gzipCompress
 import com.sloimay.mcvolume.McVolumeUtils.Companion.gzipDecompress
 import com.sloimay.mcvolume.McVolumeUtils.Companion.makePackedLongArrLF
-import com.sloimay.mcvolume.McVolumeUtils.Companion.nbtDetectDecompression
 import com.sloimay.mcvolume.McVolumeUtils.Companion.serializeNbtCompound
 import com.sloimay.mcvolume.McVolumeUtils.Companion.unpackLongArrLFIntoShortArray
 import com.sloimay.mcvolume.block.BlockState
@@ -18,12 +17,8 @@ import com.sloimay.mcvolume.blockpalette.HashedBlockPalette
 import com.sloimay.mcvolume.blockpalette.ListBlockPalette
 import com.sloimay.smath.vectors.IVec3
 import net.querz.mca.CompressionType
-import net.querz.nbt.io.NBTDeserializer
-import net.querz.nbt.io.NBTUtil
-import net.querz.nbt.io.NamedTag
 import net.querz.nbt.tag.CompoundTag
 import java.io.File
-import java.io.FileInputStream
 import java.nio.ByteOrder
 import java.nio.charset.Charset
 import kotlin.time.TimeSource
@@ -240,7 +235,7 @@ fun McVolume.Companion.fromMcv(filePath: String): McVolume {
     }
 
     // # Finish block palette init
-    vol.blockPalette.fillParentVolUuid(vol)
+    vol.blockPalette.iter().forEach { it.parentVolUuid = vol.uuid }
 
     println("Volume initialized from Mcv file in ${deserStart.elapsedNow()}.")
 
@@ -388,27 +383,26 @@ private fun GrowableByteBuf.getBlockPalette(): BlockPalette {
 
 private fun GrowableByteBuf.putVolBlockStateArray(arr: List<VolBlockState>) {
     putInt(arr.size)
-    for (v in arr) putVolBlockState(v)
+    for (v in arr) putVolBlockStateWithoutLink(v)
 }
 
 private fun GrowableByteBuf.getVolBlockStateArray(): List<VolBlockState> {
     val size = getInt()
     //println("getting vol block state array of size ${size}")
-    return List(size) { getVolBlockState() }
+    return List(size) { getLinklessVolBlockState() }
 }
 
 
 
 
 
-private fun GrowableByteBuf.putVolBlockState(volBlockState: VolBlockState) {
+private fun GrowableByteBuf.putVolBlockStateWithoutLink(volBlockState: VolBlockState) {
     putShort(volBlockState.paletteId)
     putString(volBlockState.state.stateStr)
 }
 
-private fun GrowableByteBuf.getVolBlockState(): VolBlockState {
-    return VolBlockState(
-        -1L, // Un-init vol uuid
+private fun GrowableByteBuf.getLinklessVolBlockState(): VolBlockState {
+    return VolBlockState.newLinkless(
         getShort(),
         BlockState.fromStr(getString())
     )

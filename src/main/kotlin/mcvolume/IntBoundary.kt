@@ -97,13 +97,13 @@ data class IntBoundary(
         return this.getClampedInside(other).eq(this)
     }
 
-    fun volume() = (b - a).elementProduct()
+    fun volume() = (b - a).eProd()
 
     fun move(v: IVec3) = new(a + v, b + v)
 
     fun expand(dims: IVec3) = new(a - dims, b + dims)
 
-    fun eq(other: IntBoundary) = this.a.equality(other.a) && this.b.equality(other.b)
+    fun eq(other: IntBoundary) = this.a.eq(other.a) && this.b.eq(other.b)
 
 
     fun rangeX() = a.x until b.x
