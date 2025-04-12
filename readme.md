@@ -1,4 +1,5 @@
 Depends on the "smath" and "querznbt" libraries.
+McVolume is under heavy development so if those libraries aren't directly bundled inside the JAR:
 Add `jitpack.io` to your repositories in your `build.gradle` (or `build.gradle.kts`).
 ```
 repositories {
