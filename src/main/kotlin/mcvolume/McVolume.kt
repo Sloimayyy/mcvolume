@@ -21,6 +21,15 @@ private fun getNewUuid() = rollingUuid.getAndAdd(1)
 
 /**
  * Non thread safe
+ *
+ * TODO:
+ *  - Make McVolumes be more modular. RAII style.
+ *      Objects that make volumes work can be instantiated outside of a volume independently,
+ *      but work along volumes if they are attached to them. Idk, I'm not sure. I'm just
+ *      trying to break dependencies and implicit contracts to have the least possible while
+ *      still retaining efficient communication between Volumes and their internals, not sure
+ *      how to go about it.
+ *
  */
 class McVolume internal constructor(
     internal var chunks: Array<Chunk?>,
@@ -137,7 +146,7 @@ class McVolume internal constructor(
         if (!loadedBound.posInside(pos)) { error("Pos not in loaded area") }
         if (volBlockState.parentVolUuid != this.uuid) { error("Trying to place an unregistered block.") }
 
-        val chunkIdx = chunkGridBound.posToYzxIdx(posToChunkPos(pos))
+        val chunkIdx = posToChunkIdx(pos)
         var chunk = chunks[chunkIdx]
         if (chunk == null) {
             if (volBlockState.paletteId != DEFAULT_BLOCK_ID) {
@@ -157,9 +166,9 @@ class McVolume internal constructor(
      * an effect inside too.
      */
     fun setTileData(pos: IVec3, tileData: CompoundTag?) {
-        if (!loadedBound.posInside(pos)) { throw Error("Pos not in loaded area") }
+        if (!loadedBound.posInside(pos)) { error("Pos outside the loaded area") }
 
-        val chunkIdx = chunkGridBound.posToYzxIdx(posToChunkPos(pos))
+        val chunkIdx = posToChunkIdx(pos)
         var chunk = chunks[chunkIdx]
         if (chunk == null) {
             if (tileData != null) {
@@ -177,7 +186,7 @@ class McVolume internal constructor(
 
 
     fun getVolBlockState(pos: IVec3): VolBlockState {
-        if (!loadedBound.posInside(pos)) { throw Error("Pos not in loaded area") }
+        if (!loadedBound.posInside(pos)) { error("Pos outside the loaded area") }
 
         val chunkIdx = chunkGridBound.posToYzxIdx(posToChunkPos(pos))
         var chunk = chunks[chunkIdx]
@@ -328,12 +337,25 @@ class McVolume internal constructor(
         return Optional.of(IntBoundary.new(minChunkPos, maxChunkPos + 1))
     }
 
+
+    internal fun chunkPosToChunkIdx(chunkPos: IVec3): Int {
+        return chunkGridBound.posToYzxIdx(chunkPos)
+    }
+
+    internal fun posToChunkIdx(pos: IVec3): Int {
+        return chunkPosToChunkIdx(posToChunkPos(pos))
+    }
+
     private fun strToBsCached(bsStr: String): BlockState {
         return blockStateCache.getOrPut(bsStr) { BlockState.fromStr(bsStr) }
     }
 
     private fun posToChunkPos(pos: IVec3): IVec3 {
         return pos shr CHUNK_BIT_SIZE
+    }
+
+    internal fun chunkPosToPos(chunkPos: IVec3): IVec3 {
+        return chunkPos shl CHUNK_BIT_SIZE
     }
 
     private fun posToChunkLocalCoords(pos: IVec3): IVec3 {

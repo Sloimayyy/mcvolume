@@ -4,13 +4,12 @@ package com.sloimay.mcvolume.io
 
 
 import com.sloimay.mcvolume.*
-import com.sloimay.mcvolume.McVolumeUtils
+import com.sloimay.mcvolume.utils.McVolumeUtils
 import com.sloimay.smath.vectors.IVec3
 import com.sloimay.smath.vectors.ivec3
 import com.sloimay.mcvolume.block.BlockPaletteId
 import net.querz.mca.CompressionType
 import net.querz.nbt.io.NBTSerializer
-import net.querz.nbt.io.NBTUtil
 import net.querz.nbt.io.NamedTag
 import net.querz.nbt.tag.*
 import java.io.BufferedOutputStream

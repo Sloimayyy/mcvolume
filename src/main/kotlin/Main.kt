@@ -2,10 +2,10 @@ package com.sloimay
 
 import com.sloimay.smath.vectors.ivec3
 import com.sloimay.mcvolume.McVolume
-import com.sloimay.mcvolume.McVolumeUtils.Companion.deserializeNbtCompound
-import com.sloimay.mcvolume.McVolumeUtils.Companion.makePackedLongArrLF
-import com.sloimay.mcvolume.McVolumeUtils.Companion.serializeNbtCompound
-import com.sloimay.mcvolume.McVolumeUtils.Companion.unpackLongArrLFIntoShortArray
+import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.deserializeNbtCompound
+import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.makePackedLongArrLF
+import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.serializeNbtCompound
+import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.unpackLongArrLFIntoShortArray
 import com.sloimay.mcvolume.block.BlockState
 import com.sloimay.smath.vectors.IVec3
 import net.querz.mca.CompressionType

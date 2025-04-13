@@ -1,4 +1,4 @@
-package com.sloimay.mcvolume
+package com.sloimay.mcvolume.utils
 
 import com.sloimay.smath.vectors.IVec3
 import net.querz.mca.CompressionType
@@ -6,6 +6,8 @@ import net.querz.nbt.io.NBTDeserializer
 import net.querz.nbt.io.NBTSerializer
 import net.querz.nbt.io.NamedTag
 import net.querz.nbt.tag.CompoundTag
+import net.querz.nbt.tag.ListTag
+import net.querz.nbt.tag.StringTag
 import java.io.*
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -211,7 +213,7 @@ internal class McVolumeUtils {
             return value to idx
         }
 
-        fun pushVarint(buf: MutableList<Byte>, i: Int) {
+        fun pushVarint(buf: MutableCollection<Byte>, i: Int) {
             var int = i
             while ((int and 0xFF_FF_FF_80.toInt()) != 0) {
                 buf.add(((int and INT_BIT_MASK) or CONTINUE_BIT_MASK).toByte())
@@ -260,6 +262,10 @@ internal class McVolumeUtils {
                     )
             }
             return baos.toByteArray()
+        }
+
+        fun stringListAsStringNbtList(l: List<String>): ListTag<StringTag> {
+            return ListTag(StringTag::class.java).also { it -> it.addAll(l.map { StringTag(it) }) }
         }
 
 

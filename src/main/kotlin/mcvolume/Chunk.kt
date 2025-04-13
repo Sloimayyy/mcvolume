@@ -14,6 +14,7 @@ import java.util.*
 class Chunk internal constructor (
     internal val CHUNK_BIT_SIZE: Int,
     internal val blocks: ShortArray,
+    // Local coords -> Tile data compound tag
     internal val tileData: HashMap<IVec3, CompoundTag>,
 ) {
 

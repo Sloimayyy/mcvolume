@@ -1,15 +1,15 @@
 package com.sloimay.mcvolume.io
 
 import com.sloimay.mcvolume.Chunk
-import com.sloimay.mcvolume.GrowableByteBuf
+import com.sloimay.mcvolume.utils.GrowableByteBuf
 import com.sloimay.mcvolume.IntBoundary
 import com.sloimay.mcvolume.McVolume
-import com.sloimay.mcvolume.McVolumeUtils.Companion.deserializeNbtCompound
-import com.sloimay.mcvolume.McVolumeUtils.Companion.gzipCompress
-import com.sloimay.mcvolume.McVolumeUtils.Companion.gzipDecompress
-import com.sloimay.mcvolume.McVolumeUtils.Companion.makePackedLongArrLF
-import com.sloimay.mcvolume.McVolumeUtils.Companion.serializeNbtCompound
-import com.sloimay.mcvolume.McVolumeUtils.Companion.unpackLongArrLFIntoShortArray
+import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.deserializeNbtCompound
+import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.gzipCompress
+import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.gzipDecompress
+import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.makePackedLongArrLF
+import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.serializeNbtCompound
+import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.unpackLongArrLFIntoShortArray
 import com.sloimay.mcvolume.block.BlockPaletteId
 import com.sloimay.mcvolume.block.BlockState
 import com.sloimay.mcvolume.blockpalette.BlockPalette
@@ -105,6 +105,13 @@ private val BYTE_ORDER = ByteOrder.LITTLE_ENDIAN
  *  chunks: [Chunk]
  */
 fun McVolume.exportToMcv(filePath: String) {
+
+    /**
+     * TODO:
+     *  - use a buffered file output stream (example: for each chunk, instantiate a growable
+     *      byte buf, then write the chunk data to the mcv file through the buffered writer)
+     */
+
     val ts = TimeSource.Monotonic
     val exportStart = ts.markNow()
 
@@ -178,6 +185,12 @@ fun McVolume.exportToMcv(filePath: String) {
  *  chunks: [Chunk]
  */
 fun McVolume.Companion.fromMcv(filePath: String): McVolume {
+
+    /**
+     * TODO:
+     *  - use a buffered file input stream
+     */
+
     val ts = TimeSource.Monotonic
     val deserStart = ts.markNow()
 
