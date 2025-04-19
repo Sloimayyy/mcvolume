@@ -480,11 +480,12 @@ private fun McVolume.loadVarintBlockStates(
 private fun McVolume.blockPaletteAsSchemPaletteNbt(): Pair<Int, CompoundTag> {
     // Schem palettes are basically 1-to-1 mappings to McVolume palettes
     val mappings = blockPalette.toUnlinkedBlockStateMappings()
+    println(mappings)
     val paletteMax = mappings.size
 
     val paletteNbt = CompoundTag().also {
         for ((paletteId, blockState) in mappings) {
-            it.putInt(blockState.fullName, paletteId.toInt())
+            it.putInt(blockState.stateStr, paletteId.toInt())
         }
     }
 
