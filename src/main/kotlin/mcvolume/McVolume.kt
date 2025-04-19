@@ -137,6 +137,8 @@ class McVolume internal constructor(
 
     /**
      * About 6x slower than setVolBlockState
+     *
+     * TODO: using a str to VolBlockState cache would be better
      */
     fun setBlockStateStr(pos: IVec3, blockStateString: String) {
         setBlockState(pos, strToBsCached(blockStateString))
@@ -164,6 +166,7 @@ class McVolume internal constructor(
     /**
      * We're storing a reference to the inputted nbt, so any modification made outside the volume will have
      * an effect inside too.
+     * If null is inputted, the tile data that may be present is deleted.
      */
     fun setTileData(pos: IVec3, tileData: CompoundTag?) {
         if (!loadedBound.posInside(pos)) { error("Pos outside the loaded area") }
@@ -171,6 +174,7 @@ class McVolume internal constructor(
         val chunkIdx = posToChunkIdx(pos)
         var chunk = chunks[chunkIdx]
         if (chunk == null) {
+            // New chunk
             if (tileData != null) {
                 val newChunk = Chunk.new(CHUNK_BIT_SIZE)
                 chunks[chunkIdx] = newChunk
