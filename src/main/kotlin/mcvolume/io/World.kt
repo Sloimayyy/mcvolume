@@ -8,6 +8,7 @@ import com.sloimay.mcvolume.utils.McVolumeUtils
 import com.sloimay.smath.vectors.IVec3
 import com.sloimay.smath.vectors.ivec3
 import com.sloimay.mcvolume.block.BlockPaletteId
+import com.sloimay.smath.geometry.boundary.IntBoundary
 import net.querz.mca.CompressionType
 import net.querz.nbt.io.NBTSerializer
 import net.querz.nbt.io.NamedTag

@@ -2,6 +2,7 @@ package com.sloimay.mcvolume.io
 
 import com.sloimay.mcvolume.*
 import com.sloimay.mcvolume.utils.McVolumeUtils
+import com.sloimay.smath.geometry.boundary.IntBoundary
 import com.sloimay.smath.vectors.IVec3
 import com.sloimay.smath.vectors.ivec3
 import java.io.File
@@ -166,7 +167,7 @@ fun McVolume.exportToSQuads(filePath: String,
     println("Init in: ${exportStart.elapsedNow()}")
 
     // # Set up threads and dispatch
-    val buildChunksGridDim = buildChunksBound.dim
+    val buildChunksGridDim = buildChunksBound.dims
     val longestAxisIdx = buildChunksGridDim.eMax()
     val jobs = McVolumeUtils.distributeRange(
         buildChunksBound.a[longestAxisIdx],

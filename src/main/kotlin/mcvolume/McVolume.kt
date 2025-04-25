@@ -5,9 +5,9 @@ import com.sloimay.smath.vectors.ivec3
 import com.sloimay.mcvolume.block.VolBlockState
 import com.sloimay.mcvolume.block.BlockState
 import com.sloimay.mcvolume.block.DEFAULT_BLOCK_ID
-import com.sloimay.mcvolume.blockpalette.BlockPalette
 import com.sloimay.mcvolume.blockpalette.HashedBlockPalette
-import com.sloimay.mcvolume.blockpalette.ListBlockPalette
+import com.sloimay.mcvolume.utils.onBorderOf
+import com.sloimay.smath.geometry.boundary.IntBoundary
 import net.querz.nbt.tag.CompoundTag
 import java.util.*
 import java.util.concurrent.atomic.AtomicLong
@@ -80,6 +80,7 @@ class McVolume internal constructor(
             require(chunkBitSize in 1..8) {
                 "Chunk bit size can only be between 1 and 8, but got ${chunkBitSize}."
             }
+
             var vol = McVolume(
                 chunks = Array(0) { null },
                 blockPalette = HashedBlockPalette(),
@@ -113,6 +114,10 @@ class McVolume internal constructor(
         return this.blockPalette.getOrAddBlock(blockState)
     }
 
+    /**
+     * Returns a Volume Block State (VolBlockState) that's essentially a block palette entry, or
+     * creates it if it doesn't exist yet.
+     */
     fun getEnsuredPaletteBlock(blockStateStr: String): VolBlockState {
         return getEnsuredPaletteBlock(strToBsCached(blockStateStr))
     }
@@ -145,11 +150,11 @@ class McVolume internal constructor(
     }
 
     fun setVolBlockState(pos: IVec3, volBlockState: VolBlockState) {
-        if (!loadedBound.posInside(pos)) { error("Pos not in loaded area") }
-        if (volBlockState.parentVolUuid != this.uuid) { error("Trying to place an unregistered block.") }
+        require(loadedBound.posInside(pos)) { "Pos is outside the loaded area" }
+        require(volBlockState.parentVolUuid == this.uuid) { "Trying to place an unregistered block." }
 
         val chunkIdx = posToChunkIdx(pos)
-        var chunk = chunks[chunkIdx]
+        val chunk = chunks[chunkIdx]
         if (chunk == null) {
             if (volBlockState.paletteId != DEFAULT_BLOCK_ID) {
                 val newChunk = Chunk.new(CHUNK_BIT_SIZE)
@@ -169,7 +174,7 @@ class McVolume internal constructor(
      * If null is inputted, the tile data that may be present is deleted.
      */
     fun setTileData(pos: IVec3, tileData: CompoundTag?) {
-        if (!loadedBound.posInside(pos)) { error("Pos outside the loaded area") }
+        require(loadedBound.posInside(pos)) { "Pos is outside the loaded area" }
 
         val chunkIdx = posToChunkIdx(pos)
         var chunk = chunks[chunkIdx]
@@ -190,7 +195,7 @@ class McVolume internal constructor(
 
 
     fun getVolBlockState(pos: IVec3): VolBlockState {
-        if (!loadedBound.posInside(pos)) { error("Pos outside the loaded area") }
+        require(loadedBound.posInside(pos)) { "Pos is outside the loaded area" }
 
         val chunkIdx = chunkGridBound.posToYzxIdx(posToChunkPos(pos))
         var chunk = chunks[chunkIdx]
@@ -205,19 +210,39 @@ class McVolume internal constructor(
     fun getBlockState(pos: IVec3): BlockState = getVolBlockState(pos).state
 
     /**
+     * Returns the Volume BlockState at the inputted position. Returns
+     * the volume's default VolBlockState if the position is outside of the loaded area.
+     */
+    fun getVolBlockStateSafe(pos: IVec3): VolBlockState {
+        if (!loadedBound.posInside(pos)) return getDefaultBlock()
+        return getVolBlockState(pos)
+    }
+
+    fun getBlockStateSafe(pos: IVec3) = getVolBlockStateSafe(pos).state
+
+
+    /**
      * The tile data returned is mutable
      */
     fun getTileData(pos: IVec3): CompoundTag? {
-        if (!loadedBound.posInside(pos)) { throw Error("Pos not in loaded area") }
+        require(loadedBound.posInside(pos)) { "Pos is outside the loaded area" }
 
         val chunkIdx = chunkGridBound.posToYzxIdx(posToChunkPos(pos))
-        var chunk = chunks[chunkIdx]
+        val chunk = chunks[chunkIdx]
         if (chunk == null) {
             return null
         } else {
             val localBlockCoords = posToChunkLocalCoords(pos)
             return chunk.getTileData(localBlockCoords)
         }
+    }
+
+    /**
+     * Returns null if we try getting a block that's outside the loaded blocks.
+     */
+    fun getTileDataSafe(pos: IVec3): CompoundTag? {
+        if (!loadedBound.posInside(pos)) return null
+        return getTileData(pos)
     }
 
 
@@ -236,7 +261,7 @@ class McVolume internal constructor(
             posToChunkPos(newBoundary.a),
             posToChunkPos(newBoundary.b + (CHUNK_SIDE_LEN - 1))
         )
-        val newChunkCount = newChunkGridBound.dim.eProd()
+        val newChunkCount = newChunkGridBound.dims.eProd()
         val newChunks: Array<Chunk?> = Array(newChunkCount) { null }
         val newWantedBound = newBoundary
         val newLoadedBound =
@@ -277,7 +302,7 @@ class McVolume internal constructor(
     }
 
 
-    fun getBuildBounds(): IntBoundary {
+    fun computeBuildBounds(): IntBoundary {
         val buildChunkBoundsOption = this.getBuildChunkBounds()
         // All chunks empty, so we return the block at 0, 0, 0
         if (buildChunkBoundsOption.isEmpty) {
@@ -288,12 +313,11 @@ class McVolume internal constructor(
         var minPos = IVec3.MAX
         var maxPos = IVec3.MIN
         for (chunkPos in buildChunkBounds.iterYzx()) {
-            if (!(chunkPos onBorderOf buildChunkBounds)) { continue; }
+            if (!(chunkPos onBorderOf buildChunkBounds)) continue
 
             // If chunk doesn't exist, don't iterate over it
             val chunkIdx = chunkGridBound.posToYzxIdx(chunkPos)
-            val chunk = chunks[chunkIdx]
-            if (chunk == null) { continue; }
+            val chunk = chunks[chunkIdx] ?: continue
 
             // Compute the min and max block positions
             val onMinBorder = buildChunkBounds.posOnMinBorder(chunkPos)

@@ -2,7 +2,6 @@ package com.sloimay.mcvolume.io
 
 import com.sloimay.mcvolume.Chunk
 import com.sloimay.mcvolume.utils.GrowableByteBuf
-import com.sloimay.mcvolume.IntBoundary
 import com.sloimay.mcvolume.McVolume
 import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.deserializeNbtCompound
 import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.gzipCompress
@@ -15,6 +14,7 @@ import com.sloimay.mcvolume.block.BlockState
 import com.sloimay.mcvolume.blockpalette.BlockPalette
 import com.sloimay.mcvolume.blockpalette.HashedBlockPalette
 import com.sloimay.mcvolume.blockpalette.ListBlockPalette
+import com.sloimay.smath.geometry.boundary.IntBoundary
 import com.sloimay.smath.vectors.IVec3
 import net.querz.mca.CompressionType
 import net.querz.nbt.tag.CompoundTag
@@ -225,7 +225,7 @@ fun McVolume.Companion.fromMcv(filePath: String): McVolume {
 
     //println("chunk file locs array of size: ${chunkFileLocs.size}")
 
-    val totalChunkCount = mcvMiscData.chunkGridBound.volume()
+    val totalChunkCount = mcvMiscData.chunkGridBound.volume().toInt()
     val chunks = Array<Chunk?>(totalChunkCount) { null }
 
     // Make volume

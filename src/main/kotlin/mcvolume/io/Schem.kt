@@ -1,7 +1,7 @@
 package com.sloimay.mcvolume.io
 
 
-import com.sloimay.mcvolume.IntBoundary
+
 import com.sloimay.smath.vectors.IVec3
 import com.sloimay.smath.vectors.ivec3
 import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.readVarint
@@ -11,6 +11,7 @@ import com.sloimay.mcvolume.utils.McVersion
 import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.pushVarint
 import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.serializeNbtCompound
 import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.stringListAsStringNbtList
+import com.sloimay.smath.geometry.boundary.IntBoundary
 import net.querz.mca.CompressionType
 import net.querz.nbt.io.NBTUtil
 import net.querz.nbt.io.NamedTag
@@ -303,7 +304,7 @@ private fun McVolume.exportToSchem2(
     mcVersion: McVersion,
     metadata: SchemMetadata?,
 ) {
-    val schemBounds = this.getBuildBounds()
+    val schemBounds = this.computeBuildBounds()
     val schemOffset = schemBounds.a
     val schemDims = schemBounds.b - schemBounds.a
 
@@ -360,7 +361,7 @@ private fun McVolume.exportToSchem3(
     metadata: SchemMetadata?,
 ) {
 
-    val schemBounds = this.getBuildBounds()
+    val schemBounds = this.computeBuildBounds()
     val schemOffset = schemBounds.a
     val schemDims = schemBounds.b - schemBounds.a
 

@@ -1,5 +1,6 @@
 package com.sloimay.mcvolume.utils
 
+import com.sloimay.smath.geometry.boundary.IntBoundary
 import com.sloimay.smath.vectors.IVec3
 import net.querz.mca.CompressionType
 import net.querz.nbt.io.NBTDeserializer
@@ -290,6 +291,9 @@ internal class McVolumeUtils {
     }
 
 }
+
+internal infix fun IVec3.onBorderOf(boundary: IntBoundary) = boundary.posOnBorder(this)
+
 
 
 
