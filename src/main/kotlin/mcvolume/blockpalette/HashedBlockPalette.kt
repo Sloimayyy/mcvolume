@@ -52,7 +52,7 @@ class HashedBlockPalette : BlockPalette() {
     }
 
 
-    override fun populateFromUnlinkedMappings(mappings: HashMap<BlockPaletteId, BlockState>) {
+    override fun populateFromUnlinkedMappings(mappings: BlockPaletteMappings) {
         requireNotLinked()
         require(mappings.size > 0) { "Mappings should at least be of length 1." }
 
@@ -72,7 +72,7 @@ class HashedBlockPalette : BlockPalette() {
         )
     }
 
-    override fun toUnlinkedBlockStateMappings(): HashMap<BlockPaletteId, BlockState> {
+    override fun toUnlinkedBlockStateMappings(): BlockPaletteMappings {
         val mappings = HashMap<BlockPaletteId, BlockState>()
         mappings.putAll(
             idToVolBlockState.map { it.paletteId to it.state }

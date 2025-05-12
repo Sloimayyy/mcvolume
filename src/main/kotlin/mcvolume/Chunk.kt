@@ -19,7 +19,6 @@ class Chunk internal constructor (
 ) {
 
     // Derived constants
-
     internal val CHUNK_SIDE_LEN = computeChunkSideLen(CHUNK_BIT_SIZE)
     internal val CHUNK_SIZE_BIT_MASK = computeChunkSizeBitMask(CHUNK_BIT_SIZE)
     internal val CHUNK_BLOCK_COUNT = computeChunkBlockCount(CHUNK_BIT_SIZE)
@@ -82,7 +81,7 @@ class Chunk internal constructor (
         return this.blocks.all { it == DEFAULT_BLOCK_ID }
     }
 
-    internal fun computeMinLocalPos(): Optional<IVec3> {
+    internal fun computeMinLocalPos(): IVec3? {
         var minBlockPos: IVec3? = null;
         for ((blockIdx, blockId) in blocks.withIndex()) {
             if (blockId == DEFAULT_BLOCK_ID) { continue; }
@@ -90,11 +89,10 @@ class Chunk internal constructor (
             if (minBlockPos == null) { minBlockPos = localPos }
             minBlockPos = minBlockPos.min(localPos)
         }
-        if (minBlockPos == null) { return Optional.empty() }
-        return Optional.of(minBlockPos)
+        return minBlockPos
     }
 
-    internal fun computeMaxLocalPos(): Optional<IVec3> {
+    internal fun computeMaxLocalPos(): IVec3? {
         var maxBlockPos: IVec3? = null;
         for ((blockIdx, blockId) in blocks.withIndex()) {
             if (blockId == DEFAULT_BLOCK_ID) { continue; }
@@ -102,7 +100,7 @@ class Chunk internal constructor (
             if (maxBlockPos == null) { maxBlockPos = localPos }
             maxBlockPos = maxBlockPos.max(localPos)
         }
-        if (maxBlockPos == null) { return Optional.empty() }
-        return Optional.of(maxBlockPos)
+
+        return maxBlockPos
     }
 }

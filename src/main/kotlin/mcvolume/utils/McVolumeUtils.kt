@@ -173,14 +173,14 @@ internal class McVolumeUtils {
             return ceil( log2( ((abs(int))+1).toDouble() ) ).toInt()
         }
 
-        fun distributeRange(rStart: Int, rEnd: Int, threadCount: Int): List<Pair<Int, Int>> {
+        fun distributeRange(rStart: Int, rEnd: Int, distribCount: Int): List<Pair<Int, Int>> {
             val totalElements = rEnd - rStart
-            val baseChunkSize = totalElements / threadCount
-            val remainingElements = totalElements % threadCount
+            val baseChunkSize = totalElements / distribCount
+            val remainingElements = totalElements % distribCount
 
             var out: MutableList<Pair<Int, Int>> = mutableListOf();
             var currentStart = rStart
-            for (threadIdx in 0 until threadCount) {
+            for (threadIdx in 0 until distribCount) {
                 val extra = if (threadIdx < remainingElements) 1 else 0
                 val currChunkSize = baseChunkSize + extra
                 if (currChunkSize != 0) {
@@ -294,7 +294,11 @@ internal class McVolumeUtils {
 
 internal infix fun IVec3.onBorderOf(boundary: IntBoundary) = boundary.posOnBorder(this)
 
-
+fun clamp(v: Int, lo: Int, hi: Int): Int {
+    if (v <= lo) return lo
+    if (v >= hi) return hi
+    return v
+}
 
 
 

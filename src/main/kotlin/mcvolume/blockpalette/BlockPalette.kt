@@ -5,6 +5,8 @@ import com.sloimay.mcvolume.block.BlockPaletteId
 import com.sloimay.mcvolume.block.BlockState
 import com.sloimay.mcvolume.block.VolBlockState
 
+typealias BlockPaletteMappings = HashMap<BlockPaletteId, BlockState>
+
 abstract sealed class BlockPalette {
 
     abstract val size: Int
@@ -19,8 +21,8 @@ abstract sealed class BlockPalette {
 
     abstract fun iter(): Iterator<VolBlockState>
 
-    abstract fun populateFromUnlinkedMappings(mappings: HashMap<BlockPaletteId, BlockState>)
-    abstract fun toUnlinkedBlockStateMappings(): HashMap<BlockPaletteId, BlockState>
+    abstract fun populateFromUnlinkedMappings(mappings: BlockPaletteMappings)
+    abstract fun toUnlinkedBlockStateMappings(): BlockPaletteMappings
 
     /**
      * The idea of a link is that a block palette is unusable as long as its not linked

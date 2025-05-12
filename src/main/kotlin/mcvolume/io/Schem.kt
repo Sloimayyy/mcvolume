@@ -59,6 +59,7 @@ class SchemMetadata(
  * @param schemVersion The version of the sponge schematic format. (2 is default, 3 isn't supported
  *                      nearly as much as version 2, but is more modern).
  */
+// TODO: Actually handle errors
 fun McVolume.exportToSchem(
     filePath: String,
     recommendedMcVersion: McVersion,
@@ -83,10 +84,11 @@ fun McVolume.exportToSchem(
 
 /**
  * Creates a new McVolume from a schem file. Only schematic file version 2 and 3s are supported.
- * As I'm lazy but also version 1 is very old.
+ * Because I'm lazy but also version 1 is very old.
  *
  * @param schemPath The path of the schematic file.
  */
+// TODO: Actually handle errors
 fun McVolume.Companion.fromSchem(schemPath: String): McVolume {
     val fileNbt = NBTUtil.read(schemPath)
 
@@ -509,7 +511,8 @@ private fun McVolume.getSchemBlockStateByteArrayTag(buildBounds: IntBoundary): B
 private fun McVolume.getSchem2BlockEntitiesObject(schemOffset: IVec3): ListTag<CompoundTag> {
     val blockEntities = ListTag(CompoundTag::class.java)
 
-    val buildChunkBounds = getBuildChunkBounds().get()
+    val buildChunkBounds = getBuildChunkBounds() ?: return blockEntities
+
     for (chunkPos in buildChunkBounds.iterYzx()) {
         val chunk = chunks[this.chunkPosToChunkIdx(chunkPos)] ?: continue
         for ((localPos, tileData) in chunk.tileData) {
@@ -527,7 +530,8 @@ private fun McVolume.getSchem2BlockEntitiesObject(schemOffset: IVec3): ListTag<C
 private fun McVolume.getSchem3BlockEntitiesObject(schemOffset: IVec3): ListTag<CompoundTag> {
     val blockEntities = ListTag(CompoundTag::class.java)
 
-    val buildChunkBounds = getBuildChunkBounds().get()
+    val buildChunkBounds = getBuildChunkBounds() ?: return blockEntities
+
     for (chunkPos in buildChunkBounds.iterYzx()) {
         val chunk = chunks[this.chunkPosToChunkIdx(chunkPos)] ?: continue
         for ((localPos, tileData) in chunk.tileData) {

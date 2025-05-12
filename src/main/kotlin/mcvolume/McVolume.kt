@@ -1,16 +1,17 @@
 package com.sloimay.mcvolume
 
+import com.sloimay.mcvolume.block.*
+import com.sloimay.mcvolume.blockpalette.BlockPaletteMappings
 import com.sloimay.smath.vectors.IVec3
 import com.sloimay.smath.vectors.ivec3
-import com.sloimay.mcvolume.block.VolBlockState
-import com.sloimay.mcvolume.block.BlockState
-import com.sloimay.mcvolume.block.DEFAULT_BLOCK_ID
 import com.sloimay.mcvolume.blockpalette.HashedBlockPalette
+import com.sloimay.mcvolume.utils.McVolumeUtils
 import com.sloimay.mcvolume.utils.onBorderOf
 import com.sloimay.smath.geometry.boundary.IntBoundary
 import net.querz.nbt.tag.CompoundTag
 import java.util.*
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.concurrent.thread
 
 
 private val rollingUuid = AtomicLong(0)
@@ -48,7 +49,7 @@ class McVolume internal constructor(
     internal var chunkGridBound: IntBoundary = IntBoundary.new(ivec3(0, 0, 0), ivec3(0, 0, 0))
 
     internal var loadedBound: IntBoundary = IntBoundary.new(ivec3(0, 0, 0), ivec3(0, 0, 0))
-    internal var wantedBound: IntBoundary = IntBoundary.new(ivec3(0, 0, 0), ivec3(0, 0, 0))
+    internal var targetBounds: IntBoundary = IntBoundary.new(ivec3(0, 0, 0), ivec3(0, 0, 0))
 
     // # VolBlockState safety
     internal val uuid: Long = getNewUuid()
@@ -71,9 +72,16 @@ class McVolume internal constructor(
 
     companion object {
 
+        /**
+         * Creates a new McVolume.
+         *
+         * The loadedAreaMin and loadedAreaMax are *target* bounds, meaning the volume
+         * is likely to load a bit more than this inputted area, as it allocates chunks, and not
+         * individual blocks.
+         */
         fun new(
-            loadedAreaMin: IVec3,
-            loadedAreaMax: IVec3,
+            targetLoadedAreaMin: IVec3,
+            targetLoadedAreaMax: IVec3,
             defaultBlockStr: String = "minecraft:air",
             chunkBitSize: Int = 5,
         ): McVolume {
@@ -87,7 +95,7 @@ class McVolume internal constructor(
                 blockStateCache = HashMap(),
                 CHUNK_BIT_SIZE = chunkBitSize,
             )
-            vol.setLoadedArea(loadedAreaMin, loadedAreaMax)
+            vol.setLoadedArea(targetLoadedAreaMin, targetLoadedAreaMax)
             vol.blockPalette.link(vol)
             vol.blockPalette.getOrAddBlock(BlockState.fromStr(defaultBlockStr))
 
@@ -249,8 +257,8 @@ class McVolume internal constructor(
 
     fun expandLoadedArea(expansion: IVec3) {
         this.setLoadedArea(
-            this.wantedBound.a - expansion,
-            this.wantedBound.b + expansion
+            this.targetBounds.a - expansion,
+            this.targetBounds.b + expansion
         )
     }
 
@@ -286,30 +294,14 @@ class McVolume internal constructor(
         this.chunks = newChunks
         this.chunkGridBound = newChunkGridBound
         this.loadedBound = newLoadedBound
-        this.wantedBound = newWantedBound
+        this.targetBounds = newWantedBound
     }
-
-
-    internal fun cleanChunks() {
-        for (chunkPos in chunkGridBound.iterYzx()) {
-            val chunkIdx = chunkGridBound.posToYzxIdx(chunkPos)
-            val chunk = chunks[chunkIdx] ?: continue
-            val chunkCanBeCleanedUp = chunk.canBeCleanedUp()
-            if (chunkCanBeCleanedUp) {
-                chunks[chunkIdx] = null
-            }
-        }
-    }
-
 
     fun computeBuildBounds(): IntBoundary {
-        val buildChunkBoundsOption = this.getBuildChunkBounds()
+        val buildChunkBounds = this.getBuildChunkBounds() ?:
         // All chunks empty, so we return the block at 0, 0, 0
-        if (buildChunkBoundsOption.isEmpty) {
-            return IntBoundary.new(IVec3.splat(0), IVec3.splat(1))
-        }
+        return IntBoundary.new(IVec3.splat(0), IVec3.splat(1))
 
-        val buildChunkBounds = buildChunkBoundsOption.get()
         var minPos = IVec3.MAX
         var maxPos = IVec3.MIN
         for (chunkPos in buildChunkBounds.iterYzx()) {
@@ -325,15 +317,15 @@ class McVolume internal constructor(
             val chunkWorldPos = chunkPos shl CHUNK_BIT_SIZE
             if (onMinBorder) {
                 val minLocalPos = chunk.computeMinLocalPos()
-                minLocalPos.ifPresent { localPos ->
-                    val worldPos = chunkWorldPos + localPos
+                if (minLocalPos != null) {
+                    val worldPos = chunkWorldPos + minLocalPos
                     minPos = minPos.min(worldPos)
                 }
             }
             if (onMaxBorder) {
                 val maxLocalPos = chunk.computeMaxLocalPos()
-                maxLocalPos.ifPresent { localPos ->
-                    val worldPos = chunkWorldPos + localPos
+                if (maxLocalPos != null) {
+                    val worldPos = chunkWorldPos + maxLocalPos
                     maxPos = maxPos.max(worldPos)
                 }
             }
@@ -342,7 +334,255 @@ class McVolume internal constructor(
         return IntBoundary.new(minPos, maxPos + 1)
     }
 
-    internal fun getBuildChunkBounds(): Optional<IntBoundary> {
+    /**
+     * Extracts a block grid out of this McVolume. Useful for outside uses.
+     * The outputted block state id mappings are a direct map to this volume's internal
+     * palette. So some mapping entries may be unnecessary.
+     *
+     * @return A triple (IVec3 (Dimensions), BlockStateIdArray, BlockPaletteMappings)
+     */
+    fun extractBlockGrid(
+        blockGridBounds: IntBoundary,
+        targetThreadCount: Int = 1,
+    ): Triple<IVec3, BlockStateIdArray, BlockPaletteMappings> {
+        require(blockGridBounds.fullyInside(loadedBound)) { "Inputted bounds are outside the volume's loaded bounds." }
+        require(targetThreadCount >= 1) { "Target thread count must be greater or equal to 1." }
+
+        // TODO: make a non-threaded version
+
+
+        val bgChunkBounds = posBoundsToChunkBounds(blockGridBounds)
+
+
+        // # Init array
+        val arrLen = blockGridBounds.dims.toLVec3().eProd()
+        // Constant blindly copied from: https://stackoverflow.com/questions/3038392 lol
+        // Also see https://github.com/openjdk/jdk14u/blob/84917a040a81af2863fddc6eace3dda3e31bf4b5/src/java.base/share/classes/jdk/internal/util/ArraysSupport.java#L583
+        val MAX_SAFE_ARR_LEN = (Int.MAX_VALUE - 8)
+        if (arrLen > MAX_SAFE_ARR_LEN.toLong()) {
+            error("Block grid bounds are too big to fit into a single array. Block count (array length): $arrLen. " +
+                    "Max allowed array length: $MAX_SAFE_ARR_LEN.")
+        }
+
+        //val initArrayStart = TimeSource.Monotonic.markNow()
+        val defaultBlockId = getDefaultBlock().paletteId
+        val blockArr = BlockStateIdArray(arrLen.toInt()) { defaultBlockId }
+        //println("init block arr in ${initArrayStart.elapsedNow()}")
+
+        // # Function that fills the array from a chunk
+        fun fillArrFromChunk(chunk: Chunk, chunkBounds: IntBoundary) {
+            val clampedChunkBounds = chunkBounds.getClampedInside(blockGridBounds)
+            val ccbRangeY = clampedChunkBounds.rangeY()
+            val ccbRangeZ = clampedChunkBounds.rangeZ()
+
+            val xRowLen = clampedChunkBounds.dims.x
+
+            for (worldY in ccbRangeY) {
+                for (worldZ in ccbRangeZ) {
+                    val rowStartWorldPos = IVec3(clampedChunkBounds.a.x, worldY, worldZ)
+                    val chunkRowStartIdx = chunk.localToBlockIdx(posToChunkLocalCoords(rowStartWorldPos))
+                    val blockArrRowStartIdx = blockGridBounds.posToYzxIdx(rowStartWorldPos)
+
+                    System.arraycopy(chunk.blocks, chunkRowStartIdx, blockArr, blockArrRowStartIdx, xRowLen)
+                }
+            }
+        }
+
+        // # Function that fills the array from chunks in the inputted chunk bound
+        fun fillArrFromChunksInChunkBounds(chunksBounds: IntBoundary) {
+            for (chunkPos in chunksBounds.iterYzx()) {
+                val chunk = chunks[chunkPosToChunkIdx(chunkPos)] ?: continue
+                val chunkBounds = IntBoundary.new(
+                    chunkPosToPos(chunkPos),
+                    chunkPosToPos(chunkPos) + CHUNK_SIDE_LEN,
+                )
+                fillArrFromChunk(chunk, chunkBounds)
+            }
+        }
+
+
+        // # Block array filling
+        if (targetThreadCount == 1) {
+            // Single threaded, avoids the cost of thread spawning
+            fillArrFromChunksInChunkBounds(bgChunkBounds)
+        } else {
+            // Multithreaded
+
+            // # Build per-thread jobs
+            val buildChunksGridDim = bgChunkBounds.dims
+            val longestAxisIdx = buildChunksGridDim.indexOfMax()
+            val chunkSlicesJobs = McVolumeUtils.distributeRange(
+                bgChunkBounds.a[longestAxisIdx],
+                bgChunkBounds.b[longestAxisIdx],
+                targetThreadCount
+            )
+            val chunkBoundsJobs = chunkSlicesJobs.map {
+                IntBoundary.new(
+                    bgChunkBounds.a.withElement(longestAxisIdx, it.first),
+                    bgChunkBounds.b.withElement(longestAxisIdx, it.second),
+                )
+            }
+
+            val threads = chunkBoundsJobs.map { chunkBoundsJob ->
+                thread (start = false) {
+                    fillArrFromChunksInChunkBounds(chunkBoundsJob)
+                }
+            }
+            threads.forEach { thread -> thread.start() }
+            threads.forEach { thread -> thread.join() }
+        }
+
+
+        return Triple(blockGridBounds.dims, blockArr, blockPalette.toUnlinkedBlockStateMappings())
+    }
+
+
+    fun placeBlockGrid(
+        pos: IVec3,
+        blockGrid: BlockStateIdArray,
+        blockGridDims: IVec3,
+        blockIdMappings: BlockPaletteMappings,
+        targetThreadCount: Int = 1,
+    ) {
+        // BlockGridId to VolumeIdMap
+        val bgMapToVolMap = BlockStateIdArray(blockIdMappings.keys.max().toInt() + 1) {
+            val bgBlockState = blockIdMappings[it.toShort()]
+                ?: getDefaultBlock().state // If we find an unmapped value, default to this vol's default
+            // Get the vol block state associated to this blockstate, also ensures
+            // the palette id exists
+            val volBlockState = getEnsuredPaletteBlock(bgBlockState)
+            val volBlockStatePaletteId = volBlockState.paletteId
+            volBlockStatePaletteId
+        }
+
+        // Grid bounds
+        val blockGridBounds = IntBoundary.new(IVec3(0), blockGridDims).shift(pos)
+        val bgChunkBounds = posBoundsToChunkBounds(blockGridBounds)
+
+        // Whether the default block is present inside of the main volume
+        // (Optimisation purposes)
+        var bgHasDefaultVolBlock = true
+        val volDefaultBlockIdInBlockGrid = bgMapToVolMap.firstOrNull { volId ->
+            volId == getDefaultBlock().paletteId
+        } ?: run { bgHasDefaultVolBlock = false; -1 }
+
+
+        fun fillChunkFromArr(chunkPos: IVec3, chunkBounds: IntBoundary) {
+            var chunk = chunks[chunkPosToChunkIdx(chunkPos)]
+
+            val clampedChunkBounds = chunkBounds.getClampedInside(blockGridBounds)
+            val ccbRangeY = clampedChunkBounds.rangeY()
+            val ccbRangeZ = clampedChunkBounds.rangeZ()
+
+            val xRowLen = clampedChunkBounds.dims.x
+
+            for (worldY in ccbRangeY) {
+                for (worldZ in ccbRangeZ) {
+                    val rowStartWorldPos = IVec3(clampedChunkBounds.a.x, worldY, worldZ)
+                    val blockArrRowStartIdx = blockGridBounds.posToYzxIdx(rowStartWorldPos)
+
+                    // Create new chunk if needed
+                    if (chunk == null) {
+                        // If it doesn't exist check every block until you find one that isn't the
+                        // default volume block, otherwise you're just going to be allocated a useless
+                        // chunk that can be represented by a null pointer instead
+
+                        val doCreateChunk = run {
+                            // If the grid doesn't contain the default vol block,
+                            // then the chunk will get created no matter what
+                            if (!bgHasDefaultVolBlock) return@run true
+
+                            // If any of the blocks of the row is
+                            for (i in blockArrRowStartIdx..<(blockArrRowStartIdx+xRowLen)) {
+                                if (blockGrid[i] != volDefaultBlockIdInBlockGrid) return@run true
+                            }
+
+                            return@run false
+                        }
+
+                        if (doCreateChunk) {
+                            chunk = Chunk.new(CHUNK_BIT_SIZE)
+                            val chunkIdx = chunkPosToChunkIdx(chunkPos)
+                            chunks[chunkIdx] = chunk
+                        }
+                    }
+
+                    // Chunk exists / was created so we place without worry
+                    if (chunk != null) {
+                        val chunkRowStartIdx = chunk.localToBlockIdx(posToChunkLocalCoords(rowStartWorldPos))
+
+                        for (i in 0..<xRowLen) {
+                            val bgId = blockGrid[blockArrRowStartIdx + i]
+                            val volIdToPlace = bgMapToVolMap[bgId.toInt()]
+                            chunk.blocks[chunkRowStartIdx + i] = volIdToPlace
+                        }
+                    }
+                }
+            }
+        }
+
+        fun fillChunksInChunksBounds(chunksBounds: IntBoundary) {
+            for (chunkPos in chunksBounds.iterYzx()) {
+                val chunkBounds = IntBoundary.new(
+                    chunkPosToPos(chunkPos),
+                    chunkPosToPos(chunkPos) + CHUNK_SIDE_LEN,
+                )
+                fillChunkFromArr(chunkPos, chunkBounds)
+            }
+        }
+
+
+        // # Block array placing
+        if (targetThreadCount == 1) {
+            // Single threaded, avoids the cost of thread spawning
+            fillChunksInChunksBounds(bgChunkBounds)
+        } else {
+            // Multithreaded
+
+            // # Build per-thread jobs
+            val buildChunksGridDim = bgChunkBounds.dims
+            val longestAxisIdx = buildChunksGridDim.indexOfMax()
+            val chunkSlicesJobs = McVolumeUtils.distributeRange(
+                bgChunkBounds.a[longestAxisIdx],
+                bgChunkBounds.b[longestAxisIdx],
+                targetThreadCount
+            )
+            val chunkBoundsJobs = chunkSlicesJobs.map {
+                IntBoundary.new(
+                    bgChunkBounds.a.withElement(longestAxisIdx, it.first),
+                    bgChunkBounds.b.withElement(longestAxisIdx, it.second),
+                )
+            }
+
+            val threads = chunkBoundsJobs.map { chunkBoundsJob ->
+                thread (start = false) {
+                    fillChunksInChunksBounds(chunkBoundsJob)
+                }
+            }
+            threads.forEach { thread -> thread.start() }
+            threads.forEach { thread -> thread.join() }
+        }
+    }
+
+
+
+
+
+
+
+
+    internal fun cleanChunks() {
+        for (chunkPos in chunkGridBound.iterYzx()) {
+            val chunkIdx = chunkGridBound.posToYzxIdx(chunkPos)
+            val chunk = chunks[chunkIdx] ?: continue
+            val chunkCanBeCleanedUp = chunk.canBeCleanedUp()
+            if (chunkCanBeCleanedUp) {
+                chunks[chunkIdx] = null
+            }
+        }
+    }
+
+    internal fun getBuildChunkBounds(): IntBoundary? {
         var minChunkPos: IVec3? = null
         var maxChunkPos: IVec3? = null
 
@@ -359,10 +599,10 @@ class McVolume internal constructor(
         }
 
         if (minChunkPos == null || maxChunkPos == null) {
-            return Optional.empty()
+            return null
         }
 
-        return Optional.of(IntBoundary.new(minChunkPos, maxChunkPos + 1))
+        return IntBoundary.new(minChunkPos, maxChunkPos + 1)
     }
 
 
@@ -378,7 +618,7 @@ class McVolume internal constructor(
         return blockStateCache.getOrPut(bsStr) { BlockState.fromStr(bsStr) }
     }
 
-    private fun posToChunkPos(pos: IVec3): IVec3 {
+    internal fun posToChunkPos(pos: IVec3): IVec3 {
         return pos shr CHUNK_BIT_SIZE
     }
 
@@ -388,6 +628,10 @@ class McVolume internal constructor(
 
     private fun posToChunkLocalCoords(pos: IVec3): IVec3 {
         return pos and CHUNK_SIZE_BIT_MASK
+    }
+
+    private fun posBoundsToChunkBounds(posBounds: IntBoundary): IntBoundary {
+        return IntBoundary.new(posToChunkPos(posBounds.a), posToChunkPos(posBounds.b - 1) + 1)
     }
 
 }

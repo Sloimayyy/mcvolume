@@ -131,7 +131,7 @@ fun McVolume.exportToMcv(filePath: String) {
         McvMiscData(
             chunkGridBound,
             loadedBound,
-            wantedBound,
+            targetBounds,
         )
     )
 
@@ -149,7 +149,7 @@ fun McVolume.exportToMcv(filePath: String) {
     byteBuf.putIntArr(IntArray(chunkCount))
 
     var fileChunkIdx = 0
-    val buildChunkBounds = this.getBuildChunkBounds().orElse(IntBoundary.new(IVec3.ZERO, IVec3.ZERO))
+    val buildChunkBounds = this.getBuildChunkBounds() ?: IntBoundary.new(IVec3.ZERO, IVec3.ZERO)
     for (chunkPos in buildChunkBounds.iterYzx()) {
         val chunkIdx = this.chunkGridBound.posToYzxIdx(chunkPos);
         val chunk = this.chunks[chunkIdx] ?: continue
@@ -165,15 +165,16 @@ fun McVolume.exportToMcv(filePath: String) {
         fileChunkIdx += 1
     }
 
-    println("Serialized chunks in ${chunkStartTime.elapsedNow()}")
+    //println("Serialized chunks in ${chunkStartTime.elapsedNow()}")
 
     // Write file
+    // TODO: use streams instead
     val fileBytes = byteBuf.toByteArray()
     val compressedBytes = gzipCompress(fileBytes)
     val file = File(fp)
     file.writeBytes(compressedBytes)
 
-    println("Exported to Mcv in ${exportStart.elapsedNow()}")
+    //println("Exported to Mcv in ${exportStart.elapsedNow()}")
 }
 
 
@@ -237,7 +238,7 @@ fun McVolume.Companion.fromMcv(filePath: String): McVolume {
     )
     vol.chunkGridBound = mcvMiscData.chunkGridBound
     vol.loadedBound = mcvMiscData.loadedBound
-    vol.wantedBound = mcvMiscData.wantedBound
+    vol.targetBounds = mcvMiscData.wantedBound
 
     // Populate chunks
     for (chunkFileLoc in chunkFileLocs) {

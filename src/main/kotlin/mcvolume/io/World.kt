@@ -42,7 +42,7 @@ fun McVolume.saveToRegions(regionFolderPath: String,
 
     val lowestSection = -4 // To change later?
 
-    val buildChunkBounds = this.getBuildChunkBounds().get()
+    val buildChunkBounds = this.getBuildChunkBounds() ?: error("Nothing to save.")
 
     // # Get every regions to make
     // For each region, keep a list of every chunk that intersects it

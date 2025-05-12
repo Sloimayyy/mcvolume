@@ -1,6 +1,7 @@
 package com.sloimay.mcvolume.block
 
 
+// Note: don't mutate those values in the BlockState class, only in the MutBlockState one.
 internal data class PropEntry(var name: String, var value: String)
 
 

@@ -104,7 +104,7 @@ fun McVolume.exportToSQuads(filePath: String,
 
 
     this.cleanChunks()
-    val buildChunksBound = this.getBuildChunkBounds().get()
+    val buildChunksBound = this.getBuildChunkBounds()!!
 
 
     // # Init file bytes

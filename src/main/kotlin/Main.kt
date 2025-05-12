@@ -7,6 +7,8 @@ import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.makePackedLongArrLF
 import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.serializeNbtCompound
 import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.unpackLongArrLFIntoShortArray
 import com.sloimay.mcvolume.block.BlockState
+import com.sloimay.mcvolume.io.exportToMcv
+import com.sloimay.smath.geometry.boundary.IntBoundary
 import com.sloimay.smath.vectors.IVec3
 import net.querz.mca.CompressionType
 import net.querz.nbt.io.SNBTUtil
@@ -24,12 +26,180 @@ import kotlin.time.TimeSource
  * TODO:
  *  Look into unimi's fast utils:
  *      https://github.com/karussell/fastutil/blob/master/src/it/unimi/dsi/fastutil/ints/Int2ObjectMap.java
- *  That's how World Edit's block state cache works
+ *  That's what World Edit's block state cache use
  *
  */
 
 
 
+
+
+
+
+
+
+
+private fun blockGridTesting() {
+
+    val vol = McVolume.new(IVec3.splat(-400), IVec3.splat(1500), chunkBitSize = 5)
+    val vol2 = McVolume.new(IVec3.splat(-400), IVec3.splat(1500), chunkBitSize = 5)
+
+
+    val blocks = listOf(
+        "glass",
+        "stone",
+        "glowstone",
+        "redstone_block",
+        "iron_block",
+        "gold_block",
+        "diamond_block",
+        "emerald_block",
+        "grass_block",
+        "dirt",
+        "stone",
+        "andesite",
+        "diorite",
+        "netherite_block",
+    )
+        .map { "minecraft:$it" }
+        .map { BlockState.fromStr(it) }
+
+
+
+    val blocks2 = listOf(
+        "red_wool",
+        "polished_andesite",
+        "oak_log",
+        "spruce_log",
+        "bedrock",
+    )
+        .map { "minecraft:$it" }
+        .map { BlockState.fromStr(it) }
+
+
+    val cubeBounds = IntBoundary.new(IVec3(0), IVec3(1022 / 5, 512, 1021 / 5)).shift(IVec3(10))
+    //println("cube bounds $cubeBounds")
+    val rand = Random(39194)
+   /* val blocksToPlace = (0 until cubeBounds.dims.eProd())
+        .map { blocks.random(rand) }*/
+    val pbStart = TimeSource.Monotonic.markNow()
+    var i = 0
+    val chunksToLeaveEmpty = arrayOf(
+        IVec3(2, 1, 2),
+        IVec3(4, 3, 1),
+        IVec3(6, 2, 3),
+    )
+    for (pos in cubeBounds.iterYzx()) {
+        if (i % 8 == 0) {
+            if (vol.posToChunkPos(pos).eSum() % 4 > 0) {
+                i++
+                continue
+            }
+            vol.setBlockState(pos, blocks.random(rand))
+        } else if (i % 92 == 0) {
+            // Fill vol2 with junk to test
+            vol2.setBlockState(pos, blocks2.random(rand))
+        }
+        i++
+    }
+
+    println("placed $i blocks in ${pbStart.elapsedNow()}")
+
+    // Extraction testing
+    val extractStart = TimeSource.Monotonic.markNow()
+    val bgBounds = cubeBounds//IntBoundary.new(IVec3(0), IVec3(512, 384, 512)).shift(IVec3(10))
+    val (dims, blockArr, mappings) = vol.extractBlockGrid(bgBounds)
+
+    val extractTimeTaken = extractStart.elapsedNow()
+    println("extracted in ${extractTimeTaken}, extracting ${(i.toDouble() / extractTimeTaken.toDouble(DurationUnit.SECONDS)).toLong()} blocks per second")
+
+
+    // Placing testing
+    val bgPlacingStart = TimeSource.Monotonic.markNow()
+    // TODO: figure out how the hecc is placing as fast as getting
+    vol2.placeBlockGrid(bgBounds.a, blockArr, dims, mappings)
+    val placingTimeTaken = bgPlacingStart.elapsedNow()
+    println("placed in $placingTimeTaken, placing ${(i.toDouble() / placingTimeTaken.toDouble(DurationUnit.SECONDS)).toLong()} blocks per second")
+
+
+
+    /*for (p in bgBounds.iterYzx()) {
+        val idxP = p - bgBounds.a
+        val b = mappings[blockArr[idxP.x + bgBounds.dims.x*idxP.z + bgBounds.dims.x*bgBounds.dims.z*idxP.y]]!!
+        val b2 = vol.getBlockState(p)
+        if (b != b2) error("not equal at $p")
+    }*/
+
+    //println("all vol and extracted blocks match!")
+
+    for (p in bgBounds.iterYzx()) {
+        val b = vol.getBlockState(p)
+        val b2 = vol2.getBlockState(p)
+        if (b != b2) error("not equal at $p")
+    }
+
+    println("Extraction then placing matches")
+
+
+    /*val p = IVec3(37, 107, 60)
+    println(mappings[blockArr[p.x + bgDims.x*p.z + bgDims.x*bgDims.z*p.y]])
+
+    println(vol.getBlockState(bgOrig + p))
+
+     */
+
+    //vol.exportToMcv("""D:\Minecraft Servers\Paper 1.20.4 - Building\plugins\nicepreview\build.mcv""")
+}
+
+
+
+
+
+private fun randomBenchmarkThing() {
+
+    val vol = McVolume.new(IVec3.ZERO, IVec3.splat(500))
+
+
+    val blocks = listOf(
+        "glass",
+        "stone",
+        "glowstone",
+        "redstone_block",
+        "iron_block"
+    )
+        .map { "minecraft:$it" }
+        .map { BlockState.fromStr(it) }
+
+
+    val bounds = IntBoundary.new(IVec3.ZERO, IVec3.splat(500))
+
+    val rand = Random(309094)
+
+    val blocksToPlace = (0 until (500*500*500))
+        .map { blocks.random(rand) }
+
+
+    val pbStart = TimeSource.Monotonic.markNow()
+
+    var i = 0
+    for (pos in bounds.iterYzx()) {
+        vol.setBlockState(pos, blocksToPlace[i])
+        i++
+    }
+
+    println("placed blocks in ${pbStart.elapsedNow()}")
+
+    val exportStart = TimeSource.Monotonic.markNow()
+    /*vol.exportToSchem(
+        """C:\Users\Bananas Man\AppData\Roaming\.minecraft\config\worldedit\schematics\test_500_cubed.schem""",
+        McVersion.JE_1_20_4,
+    )*/
+    vol.exportToMcv("""C:\Users\Bananas Man\AppData\Roaming\.minecraft\config\worldedit\schematics\test_500_cubed.mcv""")
+
+    println("exported in ${exportStart.elapsedNow()}")
+
+
+}
 
 
 
@@ -120,22 +290,24 @@ private fun blockVersioningTest() {
     val rand = Random(95837)
     fun randChar() = "abcdefghijklmnopqrstuvwxyz1234567890_".random(rand)
 
-    val blockCount = 1000
+    val blockCount = 10
     val blockStates = (0 until blockCount).map {
         BlockState.fromStr((0 until 100).joinToString(separator = "") { randChar().toString() })
     }
 
     val size = 400
     val blocksToPlace = (0 until size*size*size)
-        //.map { vol.getEnsuredPaletteBlock(blockStates.random(rand)) }
-        .map { vol.getEnsuredPaletteBlock(blockStates.random(rand).stateStr) }
+        .map { vol.getEnsuredPaletteBlock(blockStates.random(rand)) }
+        //.map { vol.getEnsuredPaletteBlock(blockStates.random(rand).stateStr) }
         //.map { blockStates.random(rand) }
+        //.map { blockStates.random(rand).stateStr }
 
     val start = ts.markNow()
     var i = 0
     //val volBlock = blocksToPlace[0]
     for (y in 0 until size) for (z in 0 until size) for (x in 0 until size) {
         //vol.setBlockStateStr(ivec3(x, y, z), blocksToPlace[i].state.stateStr)
+        //vol.setBlockStateStr(ivec3(x, y, z), blocksToPlace[i])
         vol.setVolBlockState(ivec3(x, y, z), blocksToPlace[i])
         i++
     }
@@ -220,9 +392,19 @@ internal fun blockPaletteSpeedTesting() {
 
 internal fun main() {
 
+
+    blockGridTesting()
+
+
+    return
+
+    //randomBenchmarkThing()
+
     //tagSerializationTests()
     //longPackingTesting()
 
+
+    return
 
     blockVersioningTest()
 

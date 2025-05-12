@@ -1,7 +1,10 @@
 package com.sloimay.mcvolume.block
 
 typealias BlockPaletteId = Short
+typealias BlockStateIdArray = ShortArray
 
+// TODO: move away from using that constant, as block palettes don't offer any guarantee of 0 being
+//       the default block id, but usually implements it that way
 const val DEFAULT_BLOCK_ID = 0.toShort()
 
 const val NO_PARENT_DEFINED_UUID: Long = -1
