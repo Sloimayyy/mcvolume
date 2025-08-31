@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.github.sloimayyy"
-version = "1.0.15"
+version = "1.0.18"
 
 
 

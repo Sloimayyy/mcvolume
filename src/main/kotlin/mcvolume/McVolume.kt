@@ -253,7 +253,17 @@ class McVolume internal constructor(
         return getTileData(pos)
     }
 
+    /**
+     * Shifts the volume around by XYZ amount of chunks.
+     * This method shifts the chunks in O(1) time.
+     */
+    fun shiftChunks(shift: IVec3) {
+        this.chunkGridBound = this.chunkGridBound.shift(shift)
 
+        val blockShift = shift * this.CHUNK_SIDE_LEN
+        this.loadedBound = this.loadedBound.shift(blockShift)
+        this.targetBounds = this.targetBounds.shift(blockShift)
+    }
 
     fun expandLoadedArea(expansion: IVec3) {
         this.setLoadedArea(
@@ -348,11 +358,7 @@ class McVolume internal constructor(
         require(blockGridBounds.fullyInside(loadedBound)) { "Inputted bounds are outside the volume's loaded bounds." }
         require(targetThreadCount >= 1) { "Target thread count must be greater or equal to 1." }
 
-        // TODO: make a non-threaded version
-
-
         val bgChunkBounds = posBoundsToChunkBounds(blockGridBounds)
-
 
         // # Init array
         val arrLen = blockGridBounds.dims.toLVec3().eProd()
@@ -431,7 +437,6 @@ class McVolume internal constructor(
             threads.forEach { thread -> thread.start() }
             threads.forEach { thread -> thread.join() }
         }
-
 
         return Triple(blockGridBounds.dims, blockArr, blockPalette.toUnlinkedBlockStateMappings())
     }

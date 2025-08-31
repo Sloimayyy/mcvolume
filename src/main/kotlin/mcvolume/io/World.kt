@@ -28,6 +28,9 @@ private const val BLOCK_TO_REGION_SHIFT = 4 + 5
  *
  * Rewrite of the rust implementation
  *
+ * Saves this McVolume as region files. It doesn't write the volume inside region files
+ * that are already present, but overwrites them. *USE CAREFULLY*.
+ *
  */
 fun McVolume.saveToRegions(regionFolderPath: String,
                            targetThreadCount: Int = 20,
@@ -40,7 +43,7 @@ fun McVolume.saveToRegions(regionFolderPath: String,
     this.cleanChunks()
 
 
-    val lowestSection = -4 // To change later?
+    val lowestSection = -4 // TODO: To change later?
 
     val buildChunkBounds = this.getBuildChunkBounds() ?: error("Nothing to save.")
 
@@ -340,3 +343,14 @@ fun McVolume.saveToRegions(regionFolderPath: String,
 
     println("Saved to regions in ${saveStart.elapsedNow()}")
 }
+
+
+/**
+ * Places this volume inside the regions in the inputted region folder.
+ * Creates new region files if the volume gets written in regions that don't exist yet;
+ * and modifies the region files that already exist.
+ */
+fun McVolume.placeInRegions(regionFolderPath: String) {
+    TODO("placeInRegions")
+}
+

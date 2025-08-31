@@ -154,7 +154,7 @@ private fun McVolume.Companion.fromSchem3(fileNbt: NamedTag): McVolume {
         // Idk if it's needed but just in case
         var volPaletteLength = paletteLength
         val defaultBlockPosInPalette = paletteString.indexOfFirst { it == defaultBlockStr }
-        if (defaultBlockPosInPalette != -1) volPaletteLength += 1
+        if (defaultBlockPosInPalette == -1) volPaletteLength += 1
         val defaultBlockInPaletteId = if (defaultBlockPosInPalette == -1) {
             volPaletteLength - 1
         } else {
@@ -249,7 +249,7 @@ private fun McVolume.Companion.fromSchem2(fileNbt: NamedTag): McVolume {
         // Idk if it's needed but just in case
         var volPaletteLength = paletteLength
         val defaultBlockPosInPalette = paletteString.indexOfFirst { it == defaultBlockStr }
-        if (defaultBlockPosInPalette != -1) volPaletteLength += 1
+        if (defaultBlockPosInPalette == -1) volPaletteLength += 1
         val defaultBlockInPaletteId = if (defaultBlockPosInPalette == -1) {
             volPaletteLength - 1
         } else {
@@ -448,6 +448,7 @@ private fun McVolume.loadVarintBlockStates(
     var bvX = 0
     var bvY = 0
     var bvZ = 0
+    //println("default block in palette id: ${defaultBlockInPaletteId}")
     while (blockVolumeIdx < blockVolumeData.size) {
         val (blockId, newBVIdx) = readVarint(blockVolumeData, blockVolumeIdx)
         blockVolumeIdx = newBVIdx
@@ -477,7 +478,7 @@ private fun McVolume.loadVarintBlockStates(
         }
     }
 
-    println("Loaded blocks in ${timeStart.elapsedNow()}")
+    //println("Loaded blocks in ${timeStart.elapsedNow()}")
 }
 
 private fun McVolume.blockPaletteAsSchemPaletteNbt(): Pair<Int, CompoundTag> {

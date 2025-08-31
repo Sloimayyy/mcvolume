@@ -8,6 +8,7 @@ import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.serializeNbtCompound
 import com.sloimay.mcvolume.utils.McVolumeUtils.Companion.unpackLongArrLFIntoShortArray
 import com.sloimay.mcvolume.block.BlockState
 import com.sloimay.mcvolume.io.exportToMcv
+import com.sloimay.mcvolume.io.fromSchem
 import com.sloimay.smath.geometry.boundary.IntBoundary
 import com.sloimay.smath.vectors.IVec3
 import net.querz.mca.CompressionType
@@ -77,7 +78,7 @@ private fun blockGridTesting() {
         .map { BlockState.fromStr(it) }
 
 
-    val cubeBounds = IntBoundary.new(IVec3(0), IVec3(1022 / 5, 512, 1021 / 5)).shift(IVec3(10))
+    val cubeBounds = IntBoundary.new(IVec3(0), IVec3(1022 / 20, 512, 1021 / 20)).shift(IVec3(10))
     //println("cube bounds $cubeBounds")
     val rand = Random(39194)
    /* val blocksToPlace = (0 until cubeBounds.dims.eProd())
@@ -392,6 +393,16 @@ internal fun blockPaletteSpeedTesting() {
 
 internal fun main() {
 
+    val wfcInput = McVolume.fromSchem("""F:\Intellij Workspaces\mc_building\assets\build21\wfc_1.schem""")
+
+    for (p in wfcInput.computeBuildBounds().iterYzx()) {
+        println("blockstate at ${p} is : ${wfcInput.getBlockState(p).stateStr}")
+        //vol.setBlockState(p + IVec3(32), wfcInput.getBlockState(p))
+    }
+
+
+
+    return
 
     blockGridTesting()
 
