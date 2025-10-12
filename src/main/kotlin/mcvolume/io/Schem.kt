@@ -16,6 +16,7 @@ import net.querz.mca.CompressionType
 import net.querz.nbt.io.NBTUtil
 import net.querz.nbt.io.NamedTag
 import net.querz.nbt.tag.*
+import java.util.Optional
 import kotlin.io.path.Path
 import kotlin.math.max
 import kotlin.time.ExperimentalTime
@@ -42,7 +43,7 @@ class SchemMetadata(
         if (!authors.isNullOrEmpty()) metadataNbt.put("Authors", stringListAsStringNbtList(authors))
         if (!requiredMods.isNullOrEmpty()) metadataNbt.put("RequiredMods", stringListAsStringNbtList(requiredMods))
 
-        metadataNbt.put("Extra", extraNbt)
+        if (extraNbt != null) metadataNbt.put("Extra", extraNbt)
 
         return metadataNbt
     }

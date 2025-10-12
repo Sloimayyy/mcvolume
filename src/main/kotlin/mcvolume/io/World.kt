@@ -286,7 +286,7 @@ fun McVolume.saveToRegions(regionFolderPath: String,
             colChunkNbt.putString("Status", "minecraft:full")
 
             colChunkNbt.putInt("xPos", colChunkPos.x)
-            colChunkNbt.putInt("xPos", colChunkPos.z)
+            colChunkNbt.putInt("zPos", colChunkPos.z)
             colChunkNbt.putInt("yPos", lowestSection)
 
             colChunkNbt.put("blockEntities", ListTag(CompoundTag::class.java))
