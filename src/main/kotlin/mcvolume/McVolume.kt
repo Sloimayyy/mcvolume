@@ -24,13 +24,13 @@ private fun getNewUuid() = rollingUuid.getAndAdd(1)
  * Non thread safe
  *
  * TODO:
- *  - Make McVolumes be more modular. RAII style.
+ *  - Make McVolumes be more modular. + RAII style
  *      Objects that make volumes work can be instantiated outside of a volume independently,
  *      but work along volumes if they are attached to them. Idk, I'm not sure. I'm just
  *      trying to break dependencies and implicit contracts to have the least possible while
  *      still retaining efficient communication between Volumes and their internals, not sure
  *      how to go about it.
- *
+ *  - Change the set and get block API to use function overloading probably?
  */
 class McVolume internal constructor(
     internal var chunks: Array<Chunk?>,
