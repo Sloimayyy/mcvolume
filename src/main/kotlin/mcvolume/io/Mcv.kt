@@ -96,9 +96,6 @@ private val BYTE_ORDER = ByteOrder.LITTLE_ENDIAN
 
 
 
-
-
-
 /**
  * McvFile:
  *  miscData: MiscData
@@ -107,20 +104,9 @@ private val BYTE_ORDER = ByteOrder.LITTLE_ENDIAN
  *  chunkFileLocs: Array<Int>  // points to the start byte of the chunk data
  *  chunks: [Chunk]
  */
-fun McVolume.exportToMcv(filePath: String) {
-
-    /**
-     * TODO:
-     *  - use a buffered file output stream (example: for each chunk, instantiate a growable
-     *      byte buf, then write the chunk data to the mcv file through the buffered writer)
-     */
-
+fun McVolume.exportToMcvBytes(): ByteArray {
     val ts = TimeSource.Monotonic
     val exportStart = ts.markNow()
-
-
-    // Mcv files always end in ".mcv"
-    val fp = if (filePath.endsWith(".mcv")) filePath else "$filePath.mcv"
 
     // TODO: add this clean function
     // this.clean()
@@ -174,38 +160,37 @@ fun McVolume.exportToMcv(filePath: String) {
     // TODO: use streams instead
     val fileBytes = byteBuf.toByteArray()
     val compressedBytes = gzipCompress(fileBytes)
+
+    return compressedBytes
+}
+
+
+
+
+fun McVolume.exportToMcv(filePath: String) {
+
+    /**
+     * TODO:
+     *  - use a buffered file output stream (example: for each chunk, instantiate a growable
+     *      byte buf, then write the chunk data to the mcv file through the buffered writer)
+     */
+    // Mcv files always end in ".mcv"
+    val fp = if (filePath.endsWith(".mcv")) filePath else "$filePath.mcv"
+
+    val bytes = exportToMcvBytes()
     val file = File(fp)
-    file.writeBytes(compressedBytes)
+    file.writeBytes(bytes)
 
     //println("Exported to Mcv in ${exportStart.elapsedNow()}")
 }
 
 
-/**
- * McvFile:
- *  miscData: MiscData
- *  blockPalette: BlockPalette
- *  chunkFileLocs: Array<Int>  // points to the start byte of the chunk data
- *  chunks: [Chunk]
- */
-fun McVolume.Companion.fromMcv(filePath: String): McVolume {
 
-    /**
-     * TODO:
-     *  - use a buffered file input stream
-     */
-
+fun McVolume.Companion.fromMcvBytes(bytes: ByteArray): McVolume {
     val ts = TimeSource.Monotonic
     val deserStart = ts.markNow()
 
-    val file = File(filePath)
-    require(file.isFile) { "Inputted file path needs to be a file." }
-
-    val fileBytes = file.readBytes()
-    val uncompressedBytes = gzipDecompress(fileBytes)
-
-    //println(uncompressedBytes.slice(4*3*2*3 until min(200, uncompressedBytes.size)))
-    //println(uncompressedBytes.size)
+    val uncompressedBytes = gzipDecompress(bytes)
 
     // Setup byte buf
     val byteBuf = GrowableByteBuf(uncompressedBytes.size, byteOrder = BYTE_ORDER)
@@ -255,6 +240,23 @@ fun McVolume.Companion.fromMcv(filePath: String): McVolume {
     vol.blockPalette.link(vol)
 
     println("Volume initialized from Mcv file in ${deserStart.elapsedNow()}.")
+
+    return vol
+}
+
+
+
+fun McVolume.Companion.fromMcv(filePath: String): McVolume {
+
+    /**
+     * TODO:
+     *  - use a buffered file input stream
+     */
+
+    val file = File(filePath)
+    require(file.isFile) { "Inputted file path needs to be a file." }
+
+    val vol = fromMcvBytes(file.readBytes())
 
     return vol
 }
