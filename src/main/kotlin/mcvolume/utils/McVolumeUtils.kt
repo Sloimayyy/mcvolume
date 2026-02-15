@@ -303,7 +303,7 @@ fun clamp(v: Int, lo: Int, hi: Int): Int {
 
 
 
-class GrowableByteBuf(initialCapacity: Int = 16, private val byteOrder: ByteOrder = ByteOrder.LITTLE_ENDIAN) {
+internal class GrowableByteBuf(initialCapacity: Int = 16, private val byteOrder: ByteOrder = ByteOrder.LITTLE_ENDIAN) {
 
     private var buffer: ByteBuffer
     private var size: Int = 0

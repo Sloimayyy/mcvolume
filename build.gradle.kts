@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.github.sloimayyy"
-version = "1.0.18"
+version = "1.0.19"
 
 
 
@@ -23,6 +23,9 @@ dependencies {
     //implementation(kotlin("stdlib"))
     implementation("com.github.sloimayyy:smath:1.1.4")
     implementation("com.github.Querz:NBT:6.1")
+
+    // If adding kotlin reflect,
+    // make sure to uncomment the line about it in the shadow jar config
 
     //implementation("it.unimi.dsi:fastutil:8.5.12")
 }
@@ -53,6 +56,14 @@ tasks {
         exclude("it/unimi/dsi/fastutil/floats/**")
         exclude("it/unimi/dsi/fastutil/io/**")
         exclude("it/unimi/dsi/fastutil/longs/**")
+
+        // Exclude Kotlin stdlib
+        dependencies {
+            exclude(dependency("org.jetbrains.kotlin:kotlin-stdlib.*:.*"))
+        }
+        /*dependencies { // Keep reflect if needed
+            include(dependency("org.jetbrains.kotlin:kotlin-reflect:.*"))
+        }*/
 
         // Your shadow configurations
         archiveClassifier.set("") // Remove the default "all" classifier

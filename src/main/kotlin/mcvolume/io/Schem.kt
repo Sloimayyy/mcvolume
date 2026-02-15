@@ -499,8 +499,11 @@ private fun McVolume.blockPaletteAsSchemPaletteNbt(): Pair<Int, CompoundTag> {
 
 private fun McVolume.getSchemBlockStateByteArrayTag(buildBounds: IntBoundary): ByteArrayTag {
     val blockDataList = mutableListOf<Byte>()
+    //println("getting block state array")
+    //println(buildBounds)
 
     for (p in buildBounds.iterYzx()) {
+        //println(p)
         val vbs = getVolBlockState(p)
         val id = vbs.paletteId.toInt()
         pushVarint(blockDataList, id)

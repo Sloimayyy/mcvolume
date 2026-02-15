@@ -307,6 +307,7 @@ class McVolume internal constructor(
         this.targetBounds = newWantedBound
     }
 
+    // TODO: handle the case where the build is empty
     fun computeBuildBounds(): IntBoundary {
         val buildChunkBounds = this.getBuildChunkBounds() ?:
         // All chunks empty, so we return the block at 0, 0, 0
